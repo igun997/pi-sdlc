@@ -1,14 +1,31 @@
 ---
 name: sdlc-spec
 description: Create feature specs through collaborative brainstorming. Use when starting new features, writing requirements, or defining acceptance criteria.
-model: opus, sonnet
 ---
 
 > **Related skills:** After spec complete, use `/skill:sdlc-plan` to break down into tasks.
->
-> **Recommended model:** Opus (complex reasoning, architecture). Sonnet OK for simple specs.
 
 # SDLC Spec
+
+## Model Selection
+
+Set tier via `SDLC_TIER` env or check project config:
+
+```bash
+# Set tier for session
+export SDLC_TIER=high   # or: medium, budget
+
+# Or use with command
+SDLC_TIER=budget pi "/skill:sdlc-spec"
+```
+
+| Tier | Model | Why |
+|------|-------|-----|
+| 💎 `high` | `claude-opus` | Best reasoning, architecture |
+| ⚡ `medium` | `gemini-2.5-pro` | 1M context, balanced |
+| 💰 `budget` | `deepseek-r1` | Cheap + capable |
+
+**Check config:** Read `sdlc.config.json` or `templates/config.json` for project tier.
 
 ## Overview
 

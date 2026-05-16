@@ -1,14 +1,25 @@
 ---
 name: sdlc-verify
 description: Final verification against spec with full evidence chain. Use after sdlc-execute to confirm feature is complete.
-model: opus, sonnet
 ---
 
 > **Related skills:** Execute tasks first with `/skill:sdlc-execute`. Start new feature with `/skill:sdlc-spec`.
->
-> **Recommended model:** Opus (thorough review, catches subtle issues). Haiku for quick pass/fail checks.
 
 # SDLC Verify
+
+## Model Selection
+
+Set tier via `SDLC_TIER` env or check project config:
+
+```bash
+export SDLC_TIER=high   # or: medium, budget
+```
+
+| Tier | Model | Why |
+|------|-------|-----|
+| 💎 `high` | `claude-sonnet` | Thorough verification |
+| ⚡ `medium` | `gpt-4o-mini` | Fast + accurate |
+| 💰 `budget` | `gemini-flash` | Quick checks |
 
 ## Overview
 

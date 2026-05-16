@@ -1,16 +1,27 @@
 ---
 name: sdlc-plan
 description: Break specs into ordered tasks with acceptance criteria. Use after sdlc-spec to create executable task breakdown.
-model: opus, sonnet
 ---
 
 > **Related skills:** Create spec first with `/skill:sdlc-spec`. Execute with `/skill:sdlc-execute`.
 >
-> **Recommended model:** Opus (architecture, dependencies). Sonnet OK for straightforward specs.
->
 > **Rules:** See `docs/rules/README.md`. Assign task types so executor loads correct rules.
 
 # SDLC Plan
+
+## Model Selection
+
+Set tier via `SDLC_TIER` env or check project config:
+
+```bash
+export SDLC_TIER=high   # or: medium, budget
+```
+
+| Tier | Model | Why |
+|------|-------|-----|
+| 💎 `high` | `claude-opus` | Best task breakdown |
+| ⚡ `medium` | `gemini-2.5-pro` | Good planning |
+| 💰 `budget` | `deepseek-r1` | Strong reasoning |
 
 ## Overview
 

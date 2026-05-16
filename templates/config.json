@@ -5,5 +5,30 @@
   "onFail": "stop",
   "testCommand": "npm test",
   "buildCommand": "npm run build",
-  "testPattern": "**/*.test.ts"
+  "testPattern": "**/*.test.ts",
+  
+  "tier": "medium",
+  "models": {
+    "high": {
+      "spec": "claude-opus-4-7",
+      "plan": "claude-opus-4-6",
+      "execute": "claude-sonnet-4-6",
+      "review": "claude-opus-4-6",
+      "verify": "claude-sonnet-4-6"
+    },
+    "medium": {
+      "spec": "gemini-2.5-pro",
+      "plan": "gemini-2.5-pro",
+      "execute": "gpt-4o",
+      "review": "gemini-2.5-pro",
+      "verify": "gpt-4o-mini"
+    },
+    "budget": {
+      "spec": "deepseek-r1",
+      "plan": "deepseek-r1",
+      "execute": "deepseek-coder-v3",
+      "review": "qwen-coder-plus",
+      "verify": "gemini-flash"
+    }
+  }
 }

@@ -134,19 +134,35 @@ Modular rules loaded based on task type. See [docs/rules/README.md](docs/rules/R
 
 ## Model Selection
 
-Each skill has recommended models. See [docs/rules/models.md](docs/rules/models.md) for details.
+Three tiers: **High** (best), **Medium** (balanced), **Budget** (cheap). See [docs/rules/models.md](docs/rules/models.md).
 
-| Phase | Best Model | Fallback | Reason |
-|-------|------------|----------|--------|
-| Spec/Planning | Opus | Sonnet | Complex reasoning, architecture |
-| Execution | Sonnet | Haiku | Balance speed + quality |
-| Review/Verify | Opus | Sonnet | Catches subtle issues |
+| Phase | 💎 High | ⚡ Medium | 💰 Budget |
+|-------|------|--------|--------|
+| Spec/Plan | claude-opus | gemini-2.5-pro | deepseek-r1 |
+| Execute | claude-sonnet | gpt-4o | deepseek-coder |
+| Review/Verify | claude-sonnet | gpt-4o-mini | gemini-flash |
+
+### Set Tier
 
 ```bash
-# Use with specific model
-pi --model opus "/skill:sdlc-spec"  # Planning
-pi --model sonnet "/skill:sdlc-execute"  # Coding
-pi --model opus "/skill:sdlc-verify"  # Review
+# Environment variable (persists for session)
+export SDLC_TIER=medium
+
+# Per-command
+SDLC_TIER=budget pi "/skill:sdlc-spec"
+
+# Or set in project config (sdlc.config.json)
+{
+  "tier": "high"
+}
+```
+
+### Override Model Directly
+
+```bash
+# Ignore tier, use specific model
+pi --model claude-opus "/skill:sdlc-spec"
+pi --model deepseek-coder "/skill:sdlc-execute"
 ```
 
 ## Design
