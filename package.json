@@ -4,11 +4,15 @@
   "description": "SDLC skills for pi-agents: spec → plan → execute → verify with drift detection and verification gates",
   "pi": {
     "type": "extension",
+    "extensions": [
+      "extensions/sdlc-choose.ts"
+    ],
     "skills": [
       "skills/sdlc-spec/SKILL.md",
       "skills/sdlc-plan/SKILL.md",
       "skills/sdlc-execute/SKILL.md",
-      "skills/sdlc-verify/SKILL.md"
+      "skills/sdlc-verify/SKILL.md",
+      "skills/sdlc-choose/SKILL.md"
     ],
     "dependencies": ["pi-memctx"]
   },

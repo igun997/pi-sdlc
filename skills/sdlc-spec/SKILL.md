@@ -9,23 +9,24 @@ description: Create feature specs through collaborative brainstorming. Use when 
 
 ## Model Selection
 
-Set tier via `SDLC_TIER` env or check project config:
+**Before starting:** Read `sdlc.config.json` to get model for this phase.
 
-```bash
-# Set tier for session
-export SDLC_TIER=high   # or: medium, budget
-
-# Or use with command
-SDLC_TIER=budget pi "/skill:sdlc-spec"
+```javascript
+// Read config
+const config = JSON.parse(fs.readFileSync('sdlc.config.json'));
+const tier = process.env.SDLC_TIER || config.tier || 'medium';
+const model = config.models[tier].spec;
 ```
 
-| Tier | Model | Why |
-|------|-------|-----|
-| 💎 `high` | `claude-opus` | Best reasoning, architecture |
-| ⚡ `medium` | `gemini-2.5-pro` | 1M context, balanced |
-| 💰 `budget` | `deepseek-r1` | Cheap + capable |
+**Announce model:** "Using model `{model}` for spec phase (tier: {tier})."
 
-**Check config:** Read `sdlc.config.json` or `templates/config.json` for project tier.
+**Configure models:** Run `/skill:sdlc-choose` to customize models per tier.
+
+| Tier | Default Model |
+|------|---------------|
+| 💎 `high` | claude-opus |
+| ⚡ `medium` | gemini-2.5-pro |
+| 💰 `budget` | deepseek-r1 |
 
 ## Overview
 

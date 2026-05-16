@@ -142,22 +142,37 @@ Three tiers: **High** (best), **Medium** (balanced), **Budget** (cheap). See [do
 | Execute | claude-sonnet | gpt-4o | deepseek-coder |
 | Review/Verify | claude-sonnet | gpt-4o-mini | gemini-flash |
 
-### Set Tier
+### Interactive Configuration
+
+Use the `/sdlc-choose` command for interactive TUI:
 
 ```bash
-# Environment variable (persists for session)
-export SDLC_TIER=medium
+/sdlc-choose              # Open interactive menu
+/sdlc-choose show         # Show current config
+/sdlc-choose high         # Quick set tier
 
-# Per-command
-SDLC_TIER=budget pi "/skill:sdlc-spec"
-
-# Or set in project config (sdlc.config.json)
-{
-  "tier": "high"
-}
+# Or quick tier switch:
+/sdlc-tier high           # Set to high tier
+/sdlc-tier budget         # Set to budget tier
 ```
 
-### Override Model Directly
+Features:
+- 🎯 Select from preset tiers (high/medium/budget)
+- 🔧 Customize models per phase with model picker
+- 💾 Save custom tiers by name
+- 📋 Status bar shows current tier
+
+### Environment Variable
+
+```bash
+# Override config for session
+export SDLC_TIER=budget
+
+# Per-command override
+SDLC_TIER=high pi "/skill:sdlc-spec"
+```
+
+### Direct Model Override
 
 ```bash
 # Ignore tier, use specific model
