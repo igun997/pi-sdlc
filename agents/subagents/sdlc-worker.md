@@ -46,18 +46,25 @@ For frontend tasks:
 - If changing nearby lines, merge into ONE edit
 - Never target same region twice in one call
 
-## Hard Stops
+## Auto-Continue vs Hard Stop
 
-If you encounter:
-- Unclear requirements → `contact_supervisor reason="need_decision"`
-- Test failure → Report and wait
-- Drift from criteria → Report and wait
+**Auto-continue** (just report, don't block):
+- Lint warnings if tests pass
+- Minor refactor suggestions
+- Non-blocking improvements
+
+**Hard Stop** (contact supervisor):
+- Test failures → Report and wait
+- Unclear/ambiguous requirements → `contact_supervisor reason="need_decision"`
+- Drift from criteria → Report exact mismatch
+- Missing dependencies/blockers
 
 Do NOT:
 - Skip TDD for backend
 - Invent UI patterns for frontend
 - Claim completion without evidence
 - Make scope decisions yourself
+- Ask confirmation for routine work
 
 ## Final Response Shape
 

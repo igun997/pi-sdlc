@@ -13,35 +13,21 @@ description: Execute tasks with pre/post drift checks and verification gates. Us
 
 ## Overview
 
-Execute tasks with drift prevention (pre-check), drift detection (post-check), and gates (tests > checklist > build). Hard stop on failure.
+Execute tasks automatically via subagents. Worker implements, reviewer verifies. **No confirmation needed** unless critical failure.
 
 **Dependencies:** Requires pi-memctx, pi-subagents.
 
-## The Loop
+## Auto-Flow
 
 ```
-PRE-CHECK  → Confirm understanding
-    ↓
-IMPLEMENT  → Code the task
-    ↓
-POST-CHECK → Compare vs criteria
-    ↓
-GATES      → tests > checklist > build
-    ↓
-COMPLETE   → Update tracker, advance
+FOR EACH TASK:
+  sdlc-worker → implement
+       ↓
+  sdlc-reviewer → verify
+       ↓
+  PASS → next task (auto)
+  FAIL → HARD STOP (needs user)
 ```
-
-## Load Rules
-
-**Before coding, read relevant rules:**
-
-| Task Type | Rules to Load |
-|-----------|---------------|
-| Frontend | `docs/rules/frontend/anti-slop.md`, `components.md` |
-| Backend | `docs/rules/backend/tdd.md`, `api-design.md` |
-| Go | `docs/rules/golang/patterns.md` |
-| Rust | `docs/rules/rust/patterns.md` |
-| All | `docs/rules/general/verification.md` |
 
 ## Step 0: Check Approval
 
@@ -51,27 +37,19 @@ plan_tracker_ide:
   phase: execute
 ```
 
-If **APPROVED**, skip to verify handoff. All tasks already complete.
+If **APPROVED**, skip to verify handoff.
 
 ## Step 1: Load Context
 
 1. Read `docs/specs/{feature}/config.json`
-2. Get current task: `plan_tracker_ide(action: "status")`
-3. Read task file
+2. Get tasks: `plan_tracker_ide(action: "status")`
+3. Identify pending tasks
 
-## Step 2: PRE-CHECK
+## Step 2: Execute All Tasks (Auto-Loop)
 
-1. Summarize task in one paragraph
-2. List acceptance criteria
-3. State files to touch
-4. Ask: "Task {N}: {summary}. Proceed?"
+For each pending task, run worker → reviewer chain automatically:
 
-**autoAdvance: false** → Wait for confirmation.
-**autoAdvance: true** → Show summary, proceed.
-
-## Step 3: IMPLEMENT (via subagent)
-
-Use `worker` subagent for implementation with proper model:
+### 2a. Spawn Worker
 
 ```
 plan_tracker_ide:
@@ -80,12 +58,10 @@ plan_tracker_ide:
   status: in_progress
 ```
 
-**Delegate to worker subagent:**
-
 ```
 subagent:
-  agent: worker
-  model: {coding tier model from config}
+  agent: sdlc-worker
+  model: {coding tier from config}
   task: |
     Implement Task {N}: {task name}
     
@@ -95,144 +71,88 @@ subagent:
     Files to modify:
     {files from task file}
     
-    Rules to follow:
-    - Read {rules path based on task type}
-    - {backend: TDD required}
-    - {frontend: anti-slop required}
+    Rules:
+    - Backend: Read docs/rules/backend/tdd.md (TDD mandatory)
+    - Frontend: Read docs/rules/frontend/anti-slop.md (anti-slop mandatory)
+    - Check _references/ folder if frontend
 ```
 
-Worker will implement and return. Then verify output.
-
-**Alternative: Direct implementation** (if simple task)
-
-Follow task steps. Apply rules by type:
-
-### Backend: TDD Required
+### 2b. Spawn Reviewer (auto after worker)
 
 ```
-RED    → Write failing test
-GREEN  → Minimal code to pass
-REFACTOR → Clean, tests pass
+subagent:
+  agent: sdlc-reviewer
+  model: {fast tier from config}
+  task: |
+    Verify Task {N}: {task name}
+    
+    Check against criteria:
+    {criteria from task file}
+    
+    Run: {testCommand}
+    Build: {buildCommand}
+    
+    Return PASS or FAIL with evidence.
 ```
 
-Evidence: show red output, then green output.
+### 2c. Handle Result
 
-### Frontend: Anti-Slop Required
-
-1. Check for `_references/` folder first
-2. Find 3+ existing components to reference
-3. Use project design tokens
-4. No generic AI aesthetics
-
-### Edit Tool Best Practices
-
-**Avoid overlapping edits:**
-- Each `oldText` must be unique and non-overlapping
-- If changing nearby lines, merge into ONE edit
-- Never target same region twice in one call
-
-**Good:**
-```json
-{"edits": [{"oldText": "line1\nline2\nline3", "newText": "new1\nnew2\nnew3"}]}
-```
-
-**Bad:**
-```json
-{"edits": [
-  {"oldText": "line1\nline2", "newText": "new1\nnew2"},
-  {"oldText": "line2\nline3", "newText": "new2\nnew3"}
-]}
-```
-
-**Do NOT claim completion yet.**
-
-## Step 4: POST-CHECK
-
-Compare implementation vs criteria. If drift:
-
-- **HARD STOP**
-- Report: "Drift detected: {criterion} vs {actual}"
-- Ask: "How to resolve?"
-
-## Step 5: GATES
-
-Execute in order: **tests > checklist > build**
-
-### Gate 1: Tests
-
-```bash
-{testCommand from config}
-```
-
-Pass: exit 0, 0 failures. Show output.
-Fail: **HARD STOP**, show failures.
-
-### Gate 2: Checklist
-
-```
-Acceptance Criteria:
-- [x] Criterion 1 - VERIFIED: {evidence}
-- [x] Criterion 2 - VERIFIED: {evidence}
-```
-
-Any unchecked: **HARD STOP**
-
-### Gate 3: Build
-
-```bash
-{buildCommand from config}
-```
-
-Pass: exit 0. Fail: **HARD STOP**
-
-## Step 6: COMPLETE
-
+**PASS** (reviewer says ✓):
 ```
 plan_tracker_ide:
   action: update
   index: {N-1}
   status: complete
 ```
+→ Auto-proceed to next task. No confirmation.
 
-Sync to memctx:
+**FAIL** (reviewer says ✗):
+→ **HARD STOP**
+→ Show failure details
+→ Wait for user to fix
+→ After fix: re-run from 2a
 
-```
-memctx_save:
-  type: action
-  title: {feature} Task {N} Complete
-  path: 40-actions/YYYY-MM-DD-{feature}-task-{N}.md
-  tags: [sdlc, task, {feature}]
-```
-
-Commit:
+### 2d. Commit (per task)
 
 ```bash
-git commit -m "feat({feature}): complete task {N} - {name}"
+git add -A && git commit -m "feat({feature}): task {N} - {name}"
 ```
 
-**autoAdvance: true** → Proceed to next task.
-**autoAdvance: false** → "Say 'next' to continue."
+## Critical Failures (Require User)
 
-## Step 7: Approve Phase (when all complete)
+Only stop and ask user when:
+- Test failures
+- Build failures  
+- Drift detected (criteria mismatch)
+- Worker reports blocker
+- Ambiguous requirements
 
-After final task:
+**NOT critical** (auto-continue):
+- Lint warnings (if tests pass)
+- Minor style issues
+- Optional improvements suggested
+
+## Step 3: Phase Complete
+
+After all tasks pass:
 
 ```
 plan_tracker_ide:
   action: approve
   phase: execute
-  summary: "{N} tasks implemented and verified"
+  summary: "{N} tasks complete, all verified"
 ```
 
-## Hard Stop Protocol
-
-1. Stop immediately
-2. Report: which gate, exact error
-3. Wait for resolution
-4. After fix: re-run failed gate
+Sync to memctx:
+```
+memctx_save:
+  type: action
+  title: {feature} Execute Phase Complete
+  tags: [sdlc, execute, {feature}]
+```
 
 ## Handoff
 
-> All {N} tasks complete.
+> All {N} tasks implemented and verified.
 >
-> Ready for final verification? → `/skill:sdlc-verify`
+> → `/skill:sdlc-verify` for final spec verification
