@@ -527,7 +527,29 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
   };
 
   pi.on("input", async (event, ctx) => {
-    const text = event.text?.trim() || "";
+    const text = event.text?.trim().toLowerCase() || "";
+
+    // Confirmation triggers: "yes execute", "do execute", "proceed with execute", etc.
+    const confirmMatch = text.match(/^(?:yes|do|go|proceed|start|run|ok|sure|yep|yeah)\s*(?:with\s+)?(?:the\s+)?(execute|exec|implement|verify|check|plan|spec)(?:\s+.*)?$/i);
+    if (confirmMatch) {
+      const keyword = confirmMatch[1].toLowerCase();
+      const targetCommand = nlTriggers[keyword] || nlTriggers[keyword === "exec" ? "execute" : keyword];
+      
+      if (targetCommand) {
+        reloadConfig(ctx.cwd);
+        const agent = agents.find(a => (a.command || a.name) === targetCommand);
+        
+        if (agent?.model) {
+          await switchModelByTier(pi, ctx, currentConfig, agent.model);
+        }
+        
+        // Transform to slash command
+        return {
+          action: "transform" as const,
+          text: `/${targetCommand}`,
+        };
+      }
+    }
 
     // Check for natural language trigger: "let <keyword> ..." or "lets <keyword> ..."
     const nlMatch = text.match(/^lets?\s+(brainstorm|spec|plan|execute|exec|implement|verify|check)(?:\s+(.*))?$/i);
