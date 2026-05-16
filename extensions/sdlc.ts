@@ -194,12 +194,23 @@ async function selectModelInteractive(
   title: string
 ): Promise<string | null> {
   const registry = (ctx as any).modelRegistry;
-  if (!registry?.getAllModels) {
+  if (!registry) {
     ctx.ui?.notify?.("Model registry not available", "error");
     return null;
   }
 
-  const models = registry.getAllModels() as Array<{ provider: string; id: string; name?: string }>;
+  // Use getAvailable() for models with valid API keys
+  let models: Array<{ provider: string; id: string; name?: string }> = [];
+  
+  if (typeof registry.getAvailable === "function") {
+    models = await registry.getAvailable();
+  } else if (typeof registry.getAllModels === "function") {
+    models = registry.getAllModels();
+  } else {
+    ctx.ui?.notify?.("Cannot list models", "error");
+    return null;
+  }
+
   if (models.length === 0) {
     ctx.ui?.notify?.("No models available", "error");
     return null;
