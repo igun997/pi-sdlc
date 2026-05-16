@@ -20,14 +20,33 @@ Execute tasks automatically via subagents. Worker implements, reviewer verifies.
 ## Auto-Flow
 
 ```
-FOR EACH TASK:
-  sdlc-worker → implement
+FOR EACH TASK (1..N):
+  sdlc-worker → implement (coding tier model)
        ↓
-  sdlc-reviewer → verify
+  sdlc-reviewer → verify (fast tier model)
        ↓
   PASS → next task (auto)
   FAIL → HARD STOP (needs user)
 ```
+
+**Example: 6 tasks**
+```
+Task 1: worker(coding) → reviewer(fast) → ✓ PASS
+Task 2: worker(coding) → reviewer(fast) → ✓ PASS
+Task 3: worker(coding) → reviewer(fast) → ✗ FAIL → STOP
+[user fixes]
+Task 3: worker(coding) → reviewer(fast) → ✓ PASS
+Task 4: worker(coding) → reviewer(fast) → ✓ PASS
+Task 5: worker(coding) → reviewer(fast) → ✓ PASS
+Task 6: worker(coding) → reviewer(fast) → ✓ PASS
+→ Phase complete
+```
+
+**Model assignment** (from `sdlc.config.json` or `default-config.json`):
+| Subagent | Tier | Example Model |
+|----------|------|---------------|
+| sdlc-worker | `coding` | claude-sonnet-4, gpt-4o, gemma-4 |
+| sdlc-reviewer | `fast` | gpt-4o-mini, qwen2.5-32b |
 
 ## Step 0: Check Approval
 
