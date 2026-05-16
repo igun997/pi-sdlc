@@ -114,7 +114,7 @@ export default function planTrackerExtension(pi: ExtensionAPI): void {
   };
 
   /**
-   * Update status bar with progress
+   * Update status bar and widget with progress
    */
   const updateStatusBar = (ctx: ExtensionContext) => {
     if (state.tasks.length === 0) {
@@ -124,17 +124,113 @@ export default function planTrackerExtension(pi: ExtensionAPI): void {
     }
 
     const complete = state.tasks.filter(t => t.status === "complete").length;
+    const inProgress = state.tasks.filter(t => t.status === "in_progress").length;
+    const blocked = state.tasks.filter(t => t.status === "blocked").length;
     const total = state.tasks.length;
     const current = state.tasks[state.currentIndex];
     
     const theme = ctx.ui?.theme;
-    if (theme) {
-      const progress = `${complete}/${total}`;
-      const statusText = current 
-        ? `📋 ${progress} | ${current.name}`
-        : `📋 ${progress}`;
-      ctx.ui?.setStatus?.("plan-tracker", theme.fg("accent", statusText));
+    if (!theme) return;
+
+    // Footer status
+    const progress = `${complete}/${total}`;
+    const statusText = current 
+      ? `📋 ${progress} | ${current.name}`
+      : `📋 ${progress}`;
+    ctx.ui?.setStatus?.("plan-tracker", theme.fg("accent", statusText));
+
+    // Widget above editor showing task list
+    const lines: string[] = [];
+    
+    // Header with progress bar
+    const progressPct = Math.round((complete / total) * 100);
+    const barWidth = 20;
+    const filled = Math.round((complete / total) * barWidth);
+    const progressBar = theme.fg("success", "█".repeat(filled)) + 
+                        theme.fg("muted", "░".repeat(barWidth - filled));
+    
+    lines.push(
+      theme.fg("accent", theme.bold(" 📋 SDLC Tasks ")) + 
+      theme.fg("muted", `[${progressBar}] `) +
+      theme.fg("success", `${complete}`) + 
+      theme.fg("muted", `/${total}`)
+    );
+    
+    // Feature name if set
+    if (state.feature) {
+      lines.push(theme.fg("dim", ` Feature: ${state.feature}`));
     }
+    
+    lines.push(""); // spacer
+    
+    // Task list (show max 8 tasks, prioritize current and nearby)
+    const maxVisible = 8;
+    let startIdx = 0;
+    if (state.tasks.length > maxVisible) {
+      startIdx = Math.max(0, state.currentIndex - 2);
+      if (startIdx + maxVisible > state.tasks.length) {
+        startIdx = state.tasks.length - maxVisible;
+      }
+    }
+    
+    const visibleTasks = state.tasks.slice(startIdx, startIdx + maxVisible);
+    
+    for (const task of visibleTasks) {
+      const isCurrent = task.index === state.currentIndex;
+      
+      // Status marker
+      let marker: string;
+      switch (task.status) {
+        case "complete":
+          marker = theme.fg("success", "✓");
+          break;
+        case "in_progress":
+          marker = theme.fg("warning", "→");
+          break;
+        case "blocked":
+          marker = theme.fg("error", "✗");
+          break;
+        default:
+          marker = theme.fg("dim", "○");
+      }
+      
+      // Task name
+      let name = task.name;
+      if (task.status === "complete") {
+        name = theme.fg("muted", theme.strikethrough(name));
+      } else if (isCurrent) {
+        name = theme.fg("text", theme.bold(name));
+      } else {
+        name = theme.fg("muted", name);
+      }
+      
+      // Type badge
+      const typeBadge = task.type 
+        ? theme.fg("dim", ` [${task.type}]`)
+        : "";
+      
+      // Current indicator
+      const currentMark = isCurrent ? theme.fg("accent", " ◀") : "";
+      
+      lines.push(` ${marker} ${name}${typeBadge}${currentMark}`);
+    }
+    
+    // Show ellipsis if truncated
+    if (state.tasks.length > maxVisible) {
+      const hidden = state.tasks.length - maxVisible;
+      lines.push(theme.fg("dim", ` ... ${hidden} more tasks`));
+    }
+    
+    // Approvals footer
+    if (state.approvals.length > 0) {
+      lines.push("");
+      const approvedPhases = state.approvals.map(a => 
+        theme.fg("success", `✓${a.phase}`)
+      ).join(" ");
+      lines.push(theme.fg("dim", " Approved: ") + approvedPhases);
+    }
+    
+    ctx.ui?.setWidget?.("plan-tracker", lines);
   };
 
   // Reconstruct on session events
