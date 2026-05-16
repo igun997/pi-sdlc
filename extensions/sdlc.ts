@@ -557,6 +557,11 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
 
     // Match /sdlc-* commands for model switching
     const cmdMatch = text.match(/^\/(sdlc-(?:spec|plan|execute|verify))(?:\s|$)/);
+    
+    // Debug: log what we're matching
+    if (text.startsWith("/sdlc-")) {
+      ctx.ui?.notify?.(`SDLC input: "${text}" → match: ${cmdMatch?.[1] || 'none'}`, "info");
+    }
     if (!cmdMatch) return { action: "continue" as const };
 
     const commandName = cmdMatch[1];
