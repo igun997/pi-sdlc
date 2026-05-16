@@ -1,0 +1,30 @@
+{
+  "name": "pi-sdlc",
+  "version": "0.1.0",
+  "description": "SDLC skills for pi-agents: spec → plan → execute → verify with drift detection and verification gates",
+  "pi": {
+    "type": "extension",
+    "skills": [
+      "skills/sdlc-spec/SKILL.md",
+      "skills/sdlc-plan/SKILL.md",
+      "skills/sdlc-execute/SKILL.md",
+      "skills/sdlc-verify/SKILL.md"
+    ],
+    "dependencies": ["pi-memctx"]
+  },
+  "keywords": [
+    "pi",
+    "sdlc",
+    "spec",
+    "planning",
+    "verification",
+    "drift-detection",
+    "tdd"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:igun997/pi-sdlc.git"
+  },
+  "author": "igun997",
+  "license": "MIT"
+}

@@ -1,0 +1,9 @@
+{
+  "autoAdvance": false,
+  "gates": ["tests", "checklist", "build"],
+  "gateOrder": "tests > checklist > build",
+  "onFail": "stop",
+  "testCommand": "npm test",
+  "buildCommand": "npm run build",
+  "testPattern": "**/*.test.ts"
+}
