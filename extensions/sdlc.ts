@@ -1,4 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { DynamicBorder } from "@earendil-works/pi-coding-agent";
+import { Container, type SelectItem, SelectList, Text } from "@earendil-works/pi-tui";
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -216,19 +218,41 @@ async function selectModelInteractive(
     return null;
   }
 
-  // Build selection list
-  const options = models.slice(0, 50).map((m) => ({
+  // Build selection list with search support
+  const items: SelectItem[] = models.map((m) => ({
     value: `${m.provider}/${m.id}`,
     label: `${m.provider}/${m.id}`,
+    description: m.name || m.provider,
   }));
 
-  // Use native pi select
-  const choice = await ctx.ui?.select?.(title, options.map(o => o.label));
-  if (!choice) return null;
+  // Use custom SelectList with type-to-filter
+  const result = await (ctx.ui as any)?.custom?.((tui: any, theme: any, _kb: any, done: (val: string | null) => void) => {
+    const container = new Container();
+    container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
+    container.addChild(new Text(theme.fg("accent", theme.bold(title)), 1, 0));
 
-  // Find matching option
-  const selected = options.find(o => o.label === choice);
-  return selected?.value || null;
+    const selectList = new SelectList(items, Math.min(items.length, 15), {
+      selectedPrefix: (t: string) => theme.fg("accent", t),
+      selectedText: (t: string) => theme.fg("accent", t),
+      description: (t: string) => theme.fg("muted", t),
+      scrollInfo: (t: string) => theme.fg("dim", t),
+      noMatch: (t: string) => theme.fg("warning", t),
+    });
+    selectList.onSelect = (item: SelectItem) => done(item.value as string);
+    selectList.onCancel = () => done(null);
+    container.addChild(selectList);
+
+    container.addChild(new Text(theme.fg("dim", "↑↓ navigate • type to filter • enter select • esc cancel"), 1, 0));
+    container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
+
+    return {
+      render: (w: number) => container.render(w),
+      invalidate: () => container.invalidate(),
+      handleInput: (data: string) => { selectList.handleInput(data); tui.requestRender(); },
+    };
+  });
+
+  return result || null;
 }
 
 // ============================================================
