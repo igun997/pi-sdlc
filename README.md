@@ -1,19 +1,15 @@
 # pi-sdlc
 
-SDLC skills for pi-agents: spec → plan → execute → verify with drift detection and verification gates.
-
-Inspired by [Ralph Loop](https://ralphloop.sh/) - PRD-driven, task-based execution with accuracy guarantees.
+SDLC workflow extension for [Pi](https://pi.dev). Proven pipeline inspired by [pi-superagents](https://github.com/teelicht/pi-superagents) with rule-based guidance.
 
 ## Features
 
-- **Drift prevention** - pre-check understanding before each task
-- **Drift detection** - post-check implementation against spec
-- **Verification gates** - tests > checklist > build (ordered)
-- **Hard stop on failure** - no silent failures
-- **Plan tracker integration** - visibility into task progress
-- **memctx sync** - durable memory via pi-memctx
-- **Backend rules** - TDD mandatory, SOLID principles, security
-- **Frontend rules** - anti-slop mandatory, accessibility, design tokens
+- **Phased Workflow**: spec → plan → execute → verify
+- **Auto Model Switching**: Each phase uses appropriate model tier
+- **Rule-Based Guidance**: AI loads relevant rules from `docs/rules/` per task type
+- **Drift Detection**: Pre-check and post-check on every task
+- **Verification Gates**: tests > checklist > build with hard stop on failure
+- **Memory Integration**: Syncs specs and completions to pi-memctx
 
 ## Installation
 
@@ -21,169 +17,147 @@ Inspired by [Ralph Loop](https://ralphloop.sh/) - PRD-driven, task-based executi
 pi install git:github.com/igun997/pi-sdlc
 ```
 
-Requires [pi-memctx](https://pi.dev/packages/pi-memctx) (auto-installed as dependency).
+Requires [pi-memctx](https://github.com/example/pi-memctx) for durable memory.
 
-## Usage
+## Commands
 
-```bash
-# Start pi with extension
-pi -e pi-sdlc
+| Command | Phase | Purpose |
+|---------|-------|---------|
+| `/sdlc-spec <idea>` | Spec | Brainstorm and create feature specification |
+| `/sdlc-plan` | Plan | Break spec into ordered tasks |
+| `/sdlc-execute` | Execute | Implement tasks with verification gates |
+| `/sdlc-verify` | Verify | Final verification with evidence report |
+| `/sdlc-settings` | Config | Configure model tiers interactively |
 
-# In session, use skills in order:
-/skill:sdlc-spec      # brainstorm → write spec
-/skill:sdlc-plan      # spec → task breakdown
-/skill:sdlc-execute   # implement with gates
-/skill:sdlc-verify    # final verification
-```
+## Model Tiers
 
-## Skills
+Agents use abstract tiers mapped to concrete models:
 
-### sdlc-spec
+| Tier | Phase | Default Model |
+|------|-------|---------------|
+| `reasoning` | Spec, Plan | anthropic/claude-opus-4-7 |
+| `coding` | Execute | anthropic/claude-sonnet-4-6 |
+| `fast` | Verify | openai/gpt-4o-mini |
 
-Create feature specs through collaborative brainstorming.
-
-- One question at a time
-- Multiple choice preferred
-- Testable acceptance criteria
-- Syncs to memctx for recall
-
-### sdlc-plan
-
-Break specs into ordered tasks with dependencies.
-
-- 15-60 min task granularity
-- Clear acceptance criteria per task
-- Initializes plan tracker
-- Syncs task index to memctx
-
-### sdlc-execute
-
-Execute tasks with verification gates.
-
-```
-PRE-CHECK  → confirm understanding
-IMPLEMENT  → code the task
-POST-CHECK → compare vs criteria
-GATES      → tests > checklist > build
-COMPLETE   → update tracker, advance
-```
-
-Configurable:
-- `autoAdvance: true/false` - auto-proceed or wait for user
-- `onFail: "stop"` - hard stop on any gate failure
-
-### sdlc-verify
-
-Final verification against spec.
-
-- Full test suite (not just task tests)
-- Every acceptance criterion checked
-- Build verification
-- Generates evidence report
-
-## Configuration
-
-Per-feature config at `docs/specs/{feature}/config.json`:
+Configure in `sdlc.config.json`:
 
 ```json
 {
-  "autoAdvance": false,
-  "gates": ["tests", "checklist", "build"],
-  "gateOrder": "tests > checklist > build",
-  "onFail": "stop",
-  "testCommand": "npm test",
-  "buildCommand": "npm run build"
+  "sdlc": {
+    "modelTiers": {
+      "reasoning": { "model": "local-llm/alibaba/qwen-max", "thinking": "high" },
+      "coding": { "model": "local-llm/alibaba/qwen3-coder-plus" },
+      "fast": { "model": "local-llm/alibaba/qwen-flash" }
+    }
+  }
 }
-```
-
-## File Structure
-
-```
-project/
-├── docs/
-│   └── specs/
-│       └── 2026-05-16-feature/
-│           ├── spec.md
-│           ├── config.json
-│           ├── tasks/
-│           │   ├── 01-setup.md
-│           │   └── 02-core.md
-│           └── verification-report.md
-└── packs/
-    └── project/
-        ├── 20-context/
-        │   └── feature-spec.md
-        └── 60-observations/
-            └── feature-tasks.md
 ```
 
 ## Rules
 
-Modular rules loaded based on task type. See [docs/rules/README.md](docs/rules/README.md).
+Rules are loaded by AI based on task type:
 
-| Category | Rules |
-|----------|-------|
-| **General** | clean-code, git, verification, ai-craftsmanship |
-| **Frontend** | anti-slop, components, accessibility, security, performance |
-| **Backend** | tdd, solid, api-design, security, error-handling, observability |
-| **Go** | patterns, performance |
-| **Rust** | patterns, async, performance |
-| **Performance** | architecture, low-latency, database, profiling |
+| Task Type | Rules |
+|-----------|-------|
+| Backend | `backend/tdd.md`, `backend/api-design.md` |
+| Frontend | `frontend/anti-slop.md`, `frontend/components.md` |
+| Go | `golang/patterns.md` |
+| Rust | `rust/patterns.md` |
+| Performance | `performance/low-latency.md` |
 
-**AI loads only relevant rules per task, minimizing token usage.**
+Rules live in `docs/rules/`. AI reads only relevant rules, minimizing token usage.
 
-## Model Selection
+## Workflow
 
-Three tiers: **High** (best), **Medium** (balanced), **Budget** (cheap). See [docs/rules/models.md](docs/rules/models.md).
+### 1. Spec Phase
 
-| Phase | 💎 High | ⚡ Medium | 💰 Budget |
-|-------|------|--------|--------|
-| Spec/Plan | claude-opus | gemini-2.5-pro | deepseek-r1 |
-| Execute | claude-sonnet | gpt-4o | deepseek-coder |
-| Review/Verify | claude-sonnet | gpt-4o-mini | gemini-flash |
-
-### Interactive Configuration
-
-Use the `/sdlc-choose` command for interactive TUI:
-
-```bash
-/sdlc-choose              # Open interactive menu
-/sdlc-choose show         # Show current config
-/sdlc-choose high         # Quick set tier
-
-# Or quick tier switch:
-/sdlc-tier high           # Set to high tier
-/sdlc-tier budget         # Set to budget tier
+```
+/sdlc-spec Add user authentication with OAuth
 ```
 
-Features:
-- 🎯 Select from preset tiers (high/medium/budget)
-- 🔧 Customize models per phase with model picker
-- 💾 Save custom tiers by name
-- 📋 Status bar shows current tier
+- One question at a time
+- Creates `docs/specs/YYYY-MM-DD-{feature}/spec.md`
+- Syncs to memctx
 
-### Environment Variable
+### 2. Plan Phase
 
-```bash
-# Override config for session
-export SDLC_TIER=budget
-
-# Per-command override
-SDLC_TIER=high pi "/skill:sdlc-spec"
+```
+/sdlc-plan
 ```
 
-### Direct Model Override
+- Breaks spec into ordered tasks
+- Assigns task types: backend | frontend | mixed
+- Initializes plan tracker
 
-```bash
-# Ignore tier, use specific model
-pi --model claude-opus "/skill:sdlc-spec"
-pi --model deepseek-coder "/skill:sdlc-execute"
+### 3. Execute Phase
+
+```
+/sdlc-execute
 ```
 
-## Design
+- Pre-check: confirm understanding
+- Implement: follow rules by type
+- Post-check: detect drift
+- Gates: tests > checklist > build
+- Hard stop on failure
 
-See [docs/plans/2026-05-16-pi-sdlc-design.md](docs/plans/2026-05-16-pi-sdlc-design.md) for full design document.
+### 4. Verify Phase
 
-## License
+```
+/sdlc-verify
+```
 
-MIT
+- Full test suite
+- Walk every acceptance criterion
+- Generate verification report
+- Mark spec complete
+
+## Configuration
+
+### Project Config
+
+`sdlc.config.json` in project root:
+
+```json
+{
+  "sdlc": {
+    "commands": {
+      "sdlc-execute": {
+        "autoAdvance": false,
+        "useTDD": true,
+        "gates": ["tests", "checklist", "build"],
+        "onFail": "stop"
+      }
+    },
+    "modelTiers": {
+      "reasoning": { "model": "anthropic/claude-opus-4-7" },
+      "coding": { "model": "openai/gpt-4o" },
+      "fast": { "model": "openai/gpt-4o-mini" }
+    }
+  }
+}
+```
+
+### Design References
+
+For frontend tasks, create `_references/` folder with:
+- `README.md` - Brand voice, visual foundations
+- `colors_and_type.css` - Design tokens
+- `ui_kits/` - Component patterns
+
+Anti-slop rules require AI to reference these before creating UI.
+
+## Comparison with pi-superagents
+
+| Feature | pi-superagents | pi-sdlc |
+|---------|---------------|---------|
+| Workflow | Superpowers | SDLC (spec→plan→execute→verify) |
+| Agents | sp-recon, sp-implementer, etc. | Phase-based entrypoints |
+| Rules | Skills injection | Rule files loaded by task type |
+| Subagents | Bounded role delegation | Single agent per phase |
+| Review | Plannotator integration | Verification gates |
+
+## Credits
+
+- [pi-superagents](https://github.com/teelicht/pi-superagents) for the proven architecture pattern
+- [Pi](https://pi.dev) for the foundation

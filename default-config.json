@@ -1,0 +1,48 @@
+{
+  "sdlc": {
+    "tools": ["read", "grep", "find", "ls", "bash", "write", "edit", "plan_tracker"],
+    "commands": {
+      "sdlc-spec": {
+        "autoAdvance": false,
+        "useMemctx": true
+      },
+      "sdlc-plan": {
+        "autoAdvance": false,
+        "useMemctx": true
+      },
+      "sdlc-execute": {
+        "autoAdvance": false,
+        "useMemctx": true,
+        "useTDD": true,
+        "gates": ["tests", "checklist", "build"],
+        "onFail": "stop"
+      },
+      "sdlc-verify": {
+        "autoAdvance": true,
+        "useMemctx": true
+      }
+    },
+    "modelTiers": {
+      "reasoning": {
+        "model": "anthropic/claude-opus-4-7",
+        "thinking": "high"
+      },
+      "coding": {
+        "model": "anthropic/claude-sonnet-4-6",
+        "thinking": "medium"
+      },
+      "fast": {
+        "model": "openai/gpt-4o-mini",
+        "thinking": "off"
+      }
+    },
+    "rules": {
+      "backend": ["backend/tdd.md", "backend/api-design.md", "backend/error-handling.md"],
+      "frontend": ["frontend/anti-slop.md", "frontend/components.md", "frontend/accessibility.md"],
+      "golang": ["golang/patterns.md", "golang/performance.md"],
+      "rust": ["rust/patterns.md", "rust/async.md"],
+      "performance": ["performance/low-latency.md", "performance/database.md"],
+      "general": ["general/verification.md", "general/clean-code.md"]
+    }
+  }
+}

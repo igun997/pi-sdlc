@@ -1,11 +1,11 @@
 {
   "name": "pi-sdlc",
-  "version": "0.1.0",
-  "description": "SDLC skills for pi-agents: spec → plan → execute → verify with drift detection and verification gates",
+  "version": "0.2.0",
+  "description": "SDLC workflow for pi-agents: spec → plan → execute → verify with drift detection, verification gates, and rule-based guidance",
   "pi": {
     "type": "extension",
     "extensions": [
-      "extensions/sdlc-choose.ts"
+      "extensions/sdlc.ts"
     ],
     "skills": [
       "skills/sdlc-spec/SKILL.md",
@@ -16,6 +16,9 @@
     ],
     "dependencies": ["pi-memctx"]
   },
+  "dependencies": {
+    "gray-matter": "^4.0.3"
+  },
   "keywords": [
     "pi",
     "sdlc",
@@ -23,7 +26,8 @@
     "planning",
     "verification",
     "drift-detection",
-    "tdd"
+    "tdd",
+    "rules"
   ],
   "repository": {
     "type": "git",
