@@ -173,8 +173,8 @@ async function switchModelByTier(
   }
 
   if (!model) {
-    // Silent fail - continue with current model
-    ctx.ui?.notify?.(`Model "${modelId}" not available, using current`, "warning");
+    // Debug: show what we tried
+    ctx.ui?.notify?.(`Model "${modelId}" not found (provider=${provider}, id=${id})`, "warning");
     return false;
   }
 
