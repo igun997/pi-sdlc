@@ -526,30 +526,42 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
     "check": "sdlc-verify",
   };
 
+  // ============================================================
+  // Auto Model Switch on Skill File Read
+  // ============================================================
+
+  const skillToTier: Record<string, string> = {
+    "sdlc-spec": "reasoning",
+    "sdlc-plan": "reasoning",
+    "sdlc-execute": "coding",
+    "sdlc-verify": "fast",
+  };
+
+  pi.on("tool_result", async (event, ctx) => {
+    // Only intercept read_ide / Read tool
+    if (event.toolName !== "read_ide" && event.toolName !== "Read") return;
+
+    // Check if path contains skills/sdlc-*
+    const input = event.input as { path?: string } | undefined;
+    const path = input?.path || "";
+    
+    const skillMatch = path.match(/skills\/(sdlc-(?:spec|plan|execute|verify))\//);
+    if (!skillMatch) return;
+
+    const skillName = skillMatch[1];
+    const tierName = skillToTier[skillName];
+    if (!tierName) return;
+
+    reloadConfig(ctx.cwd);
+    await switchModelByTier(pi, ctx, currentConfig, tierName);
+  });
+
+  // ============================================================
+  // Input Interception for Auto Model Switching
+  // ============================================================
+
   pi.on("input", async (event, ctx) => {
     const text = event.text?.trim().toLowerCase() || "";
-
-    // Confirmation triggers: "yes execute", "do execute", "proceed with execute", etc.
-    const confirmMatch = text.match(/^(?:yes|do|go|proceed|start|run|ok|sure|yep|yeah)\s*(?:with\s+)?(?:the\s+)?(execute|exec|implement|verify|check|plan|spec)(?:\s+.*)?$/i);
-    if (confirmMatch) {
-      const keyword = confirmMatch[1].toLowerCase();
-      const targetCommand = nlTriggers[keyword] || nlTriggers[keyword === "exec" ? "execute" : keyword];
-      
-      if (targetCommand) {
-        reloadConfig(ctx.cwd);
-        const agent = agents.find(a => (a.command || a.name) === targetCommand);
-        
-        if (agent?.model) {
-          await switchModelByTier(pi, ctx, currentConfig, agent.model);
-        }
-        
-        // Transform to slash command
-        return {
-          action: "transform" as const,
-          text: `/${targetCommand}`,
-        };
-      }
-    }
 
     // Check for natural language trigger: "let <keyword> ..." or "lets <keyword> ..."
     const nlMatch = text.match(/^lets?\s+(brainstorm|spec|plan|execute|exec|implement|verify|check)(?:\s+(.*))?$/i);
