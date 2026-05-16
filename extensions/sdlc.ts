@@ -1,6 +1,4 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { DynamicBorder } from "@earendil-works/pi-coding-agent";
-import { Container, type SelectItem, SelectList, Text, Spacer } from "@earendil-works/pi-tui";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,7 +8,7 @@ import matter from "gray-matter";
 // Types
 // ============================================================
 
-interface ModelTier {
+interface ModelTierConfig {
   model: string;
   thinking?: string;
 }
@@ -27,7 +25,7 @@ interface SDLCConfig {
   sdlc: {
     tools?: string[];
     commands?: Record<string, CommandConfig>;
-    modelTiers?: Record<string, ModelTier>;
+    modelTiers?: Record<string, ModelTierConfig>;
     rules?: Record<string, string[]>;
   };
 }
@@ -72,25 +70,10 @@ function loadDefaultConfig(): SDLCConfig {
 }
 
 function loadUserConfig(cwd: string): Partial<SDLCConfig> {
-  // Check project-level config first
   const projectConfig = join(cwd, "sdlc.config.json");
   if (existsSync(projectConfig)) {
     try {
-      const raw = JSON.parse(readFileSync(projectConfig, "utf-8"));
-      // Convert old format to new format
-      if (raw.tier && raw.models) {
-        return {
-          sdlc: {
-            modelTiers: Object.fromEntries(
-              Object.entries(raw.models).map(([tier, models]: [string, any]) => [
-                tier === raw.tier ? "current" : tier,
-                { model: models.spec || models.execute || models.verify }
-              ])
-            )
-          }
-        };
-      }
-      return raw;
+      return JSON.parse(readFileSync(projectConfig, "utf-8"));
     } catch {
       return {};
     }
@@ -108,6 +91,11 @@ function mergeConfig(base: SDLCConfig, override: Partial<SDLCConfig>): SDLCConfi
       rules: { ...base.sdlc.rules, ...override.sdlc?.rules },
     }
   };
+}
+
+function saveUserConfig(cwd: string, config: Partial<SDLCConfig>): void {
+  const configPath = join(cwd, "sdlc.config.json");
+  writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
 // ============================================================
@@ -142,30 +130,42 @@ function discoverAgents(pkgRoot: string): DiscoveredAgent[] {
 }
 
 // ============================================================
-// Model Management
+// Model Helpers (using native pi API)
 // ============================================================
 
-function findModel(pi: ExtensionAPI, modelId: string): any | null {
-  const registry = (pi as any).modelRegistry ?? (pi as any).getModelRegistry?.();
-  if (!registry?.getAllModels) return null;
+async function switchModelByTier(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  config: SDLCConfig,
+  tierName: string
+): Promise<boolean> {
+  const tier = config.sdlc.modelTiers?.[tierName];
+  if (!tier?.model) return false;
 
-  const models = registry.getAllModels();
+  const modelId = tier.model;
+  const [provider, id] = modelId.includes("/") 
+    ? modelId.split("/", 2) 
+    : [null, modelId];
 
-  // Try exact match (provider/model)
-  if (modelId.includes("/")) {
-    const [provider, id] = modelId.split("/", 2);
-    const exact = models.find((m: any) => m.provider === provider && m.id === id);
-    if (exact) return exact;
+  // Use native pi modelRegistry
+  const registry = (ctx as any).modelRegistry;
+  if (!registry) return false;
+
+  let model = null;
+  if (provider && id) {
+    model = registry.find(provider, id);
+  }
+  
+  // Fallback: search all models
+  if (!model) {
+    const allModels = registry.getAllModels?.() || [];
+    model = allModels.find((m: any) => 
+      m.id === modelId || 
+      `${m.provider}/${m.id}` === modelId ||
+      m.id?.includes(id || modelId)
+    );
   }
 
-  // Try partial match
-  return models.find((m: any) => 
-    m.id === modelId || m.id?.includes(modelId) || modelId.includes(m.id)
-  ) || null;
-}
-
-async function switchModel(pi: ExtensionAPI, ctx: any, modelId: string): Promise<boolean> {
-  const model = findModel(pi, modelId);
   if (!model) {
     ctx.ui?.notify?.(`Model not found: ${modelId}`, "error");
     return false;
@@ -174,10 +174,13 @@ async function switchModel(pi: ExtensionAPI, ctx: any, modelId: string): Promise
   try {
     const success = await (pi as any).setModel(model);
     if (success) {
-      ctx.ui?.notify?.(`Model: ${model.provider}/${model.id}`, "info");
+      // Set thinking level if configured
+      if (tier.thinking && tier.thinking !== "off") {
+        (pi as any).setThinkingLevel?.(tier.thinking);
+      }
       return true;
     }
-    ctx.ui?.notify?.(`No API key for: ${model.provider}/${model.id}`, "error");
+    ctx.ui?.notify?.(`No API key for: ${modelId}`, "error");
     return false;
   } catch (e) {
     ctx.ui?.notify?.(`Model switch failed: ${e}`, "error");
@@ -185,15 +188,36 @@ async function switchModel(pi: ExtensionAPI, ctx: any, modelId: string): Promise
   }
 }
 
-function getAvailableModels(pi: ExtensionAPI): Array<{ provider: string; id: string; fullId: string }> {
-  const registry = (pi as any).modelRegistry ?? (pi as any).getModelRegistry?.();
-  if (!registry?.getAllModels) return [];
+async function selectModelInteractive(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  title: string
+): Promise<string | null> {
+  const registry = (ctx as any).modelRegistry;
+  if (!registry?.getAllModels) {
+    ctx.ui?.notify?.("Model registry not available", "error");
+    return null;
+  }
 
-  return registry.getAllModels().map((m: any) => ({
-    provider: m.provider || "unknown",
-    id: m.id || m.name || String(m),
-    fullId: m.provider && m.id ? `${m.provider}/${m.id}` : m.id || String(m),
+  const models = registry.getAllModels() as Array<{ provider: string; id: string; name?: string }>;
+  if (models.length === 0) {
+    ctx.ui?.notify?.("No models available", "error");
+    return null;
+  }
+
+  // Build selection list
+  const options = models.slice(0, 50).map((m) => ({
+    value: `${m.provider}/${m.id}`,
+    label: `${m.provider}/${m.id}`,
   }));
+
+  // Use native pi select
+  const choice = await ctx.ui?.select?.(title, options.map(o => o.label));
+  if (!choice) return null;
+
+  // Find matching option
+  const selected = options.find(o => o.label === choice);
+  return selected?.value || null;
 }
 
 // ============================================================
@@ -201,7 +225,6 @@ function getAvailableModels(pi: ExtensionAPI): Array<{ provider: string; id: str
 // ============================================================
 
 function resolveSkillPath(skillName: string): string | null {
-  // Check common skill locations
   const locations = [
     join(process.env.HOME || "", ".pi", "agent", "git", "github.com", "coctostan", "pi-superpowers", "skills", skillName, "SKILL.md"),
     join(process.env.HOME || "", ".pi", "skills", skillName, "SKILL.md"),
@@ -228,28 +251,6 @@ function buildSkillPrompt(skills: string): string {
 }
 
 // ============================================================
-// Rule Loading
-// ============================================================
-
-function loadRules(pkgRoot: string, ruleKeys: string[]): string {
-  const rulesDir = join(pkgRoot, "docs", "rules");
-  const contents: string[] = [];
-
-  for (const key of ruleKeys) {
-    const rulePath = join(rulesDir, key);
-    if (existsSync(rulePath)) {
-      try {
-        contents.push(`## Rules: ${key}\n\n${readFileSync(rulePath, "utf-8")}`);
-      } catch {
-        // Skip unreadable rules
-      }
-    }
-  }
-
-  return contents.join("\n\n---\n\n");
-}
-
-// ============================================================
 // Extension Entry
 // ============================================================
 
@@ -260,7 +261,6 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
 
   let currentConfig = defaultConfig;
 
-  // Reload config on session start
   const reloadConfig = (cwd: string) => {
     const userConfig = loadUserConfig(cwd);
     currentConfig = mergeConfig(defaultConfig, userConfig);
@@ -279,32 +279,25 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
       handler: async (args, ctx) => {
         reloadConfig(ctx.cwd);
 
-        // Switch model based on agent tier
-        if (agent.model && currentConfig.sdlc.modelTiers) {
-          const tier = currentConfig.sdlc.modelTiers[agent.model];
-          if (tier?.model) {
-            await switchModel(pi, ctx, tier.model);
-          }
+        // Switch model based on agent tier using native pi API
+        if (agent.model) {
+          await switchModelByTier(pi, ctx, currentConfig, agent.model);
         }
 
         // Build prompt with skills
         const parts: string[] = [];
-
-        // Add agent instructions
         parts.push(agent.content);
 
-        // Add skill references
         if (agent.skills) {
           parts.push(buildSkillPrompt(agent.skills));
         }
 
-        // Add task from args
         if (args) {
           parts.push(`\n## Task\n\n${args}`);
         }
 
         // Send as user message
-        ctx.ui?.appendEntry?.({
+        (ctx.ui as any)?.appendEntry?.({
           type: "user",
           message: { role: "user", content: parts.join("\n\n") },
           timestamp: Date.now(),
@@ -314,165 +307,127 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
   }
 
   // ============================================================
-  // /sdlc-settings Command
+  // /sdlc-tier - Quick tier switching using native pi select
   // ============================================================
 
-  pi.registerCommand("sdlc-settings", {
-    description: "Configure SDLC model tiers and behavior",
+  pi.registerCommand("sdlc-tier", {
+    description: "Switch SDLC model tier",
     handler: async (args, ctx) => {
       reloadConfig(ctx.cwd);
 
-      if (args === "show") {
-        const tiers = currentConfig.sdlc.modelTiers || {};
-        const lines = Object.entries(tiers)
-          .map(([name, tier]) => `${name}: ${tier.model}`)
-          .join("\n");
-        ctx.ui?.notify?.(`Model Tiers:\n${lines}`, "info");
+      const tiers = Object.keys(currentConfig.sdlc.modelTiers || {});
+      if (tiers.length === 0) {
+        ctx.ui?.notify?.("No model tiers configured", "error");
         return;
       }
 
-      // Interactive menu
-      const menuItems: SelectItem[] = [
-        { value: "tiers", label: "🎯 Model Tiers", description: "Configure model per tier" },
-        { value: "show", label: "📋 Show Config", description: "Display current configuration" },
-        { value: "cancel", label: "❌ Cancel", description: "Exit" },
-      ];
-
-      const choice = await ctx.ui?.custom?.<string | null>((tui, theme, _kb, done) => {
-        const container = new Container();
-        container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
-        container.addChild(new Text(theme.fg("accent", theme.bold("⚙️ SDLC Settings")), 1, 0));
-        container.addChild(new Spacer(1));
-
-        const selectList = new SelectList(menuItems, 5, {
-          selectedPrefix: (t) => theme.fg("accent", t),
-          selectedText: (t) => theme.fg("accent", t),
-          description: (t) => theme.fg("muted", t),
-        });
-        selectList.onSelect = (item) => done(item.value);
-        selectList.onCancel = () => done(null);
-        container.addChild(selectList);
-
-        container.addChild(new Text(theme.fg("dim", "↑↓ navigate • enter select • esc cancel"), 1, 0));
-        container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
-
-        return {
-          render: (w) => container.render(w),
-          invalidate: () => container.invalidate(),
-          handleInput: (data) => { selectList.handleInput(data); tui.requestRender(); },
-        };
-      });
-
-      if (choice === "show") {
-        const tiers = currentConfig.sdlc.modelTiers || {};
-        const lines = Object.entries(tiers)
-          .map(([name, tier]) => `${name}: ${tier.model} (thinking: ${tier.thinking || "off"})`)
-          .join("\n");
-        ctx.ui?.notify?.(`Model Tiers:\n${lines}`, "info");
+      // If tier name provided as arg, switch directly
+      if (args && tiers.includes(args)) {
+        const success = await switchModelByTier(pi, ctx, currentConfig, args);
+        if (success) {
+          const model = currentConfig.sdlc.modelTiers?.[args]?.model || "unknown";
+          ctx.ui?.notify?.(`✅ Tier: ${args} → ${model}`, "success");
+        }
+        return;
       }
 
-      if (choice === "tiers") {
-        const tiers = Object.keys(currentConfig.sdlc.modelTiers || {});
-        const tierItems: SelectItem[] = tiers.map(t => ({
-          value: t,
-          label: t,
-          description: currentConfig.sdlc.modelTiers?.[t]?.model || "not set",
-        }));
+      // Otherwise show native pi select
+      const tierLabels = tiers.map(t => {
+        const model = currentConfig.sdlc.modelTiers?.[t]?.model || "not set";
+        return `${t} (${model})`;
+      });
 
-        const tierChoice = await ctx.ui?.custom?.<string | null>((tui, theme, _kb, done) => {
-          const container = new Container();
-          container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
-          container.addChild(new Text(theme.fg("accent", theme.bold("🎯 Select Tier to Edit")), 1, 0));
-          container.addChild(new Spacer(1));
+      const choice = await ctx.ui?.select?.("Select SDLC Tier:", tierLabels);
+      if (!choice) return;
 
-          const selectList = new SelectList(tierItems, Math.min(tierItems.length, 8), {
-            selectedPrefix: (t) => theme.fg("accent", t),
-            selectedText: (t) => theme.fg("accent", t),
-            description: (t) => theme.fg("muted", t),
-          });
-          selectList.onSelect = (item) => done(item.value);
-          selectList.onCancel = () => done(null);
-          container.addChild(selectList);
-
-          container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
-
-          return {
-            render: (w) => container.render(w),
-            invalidate: () => container.invalidate(),
-            handleInput: (data) => { selectList.handleInput(data); tui.requestRender(); },
-          };
-        });
-
-        if (tierChoice) {
-          const models = getAvailableModels(pi);
-          const modelItems: SelectItem[] = models.slice(0, 50).map(m => ({
-            value: m.fullId,
-            label: m.fullId,
-            description: m.provider,
-          }));
-
-          const modelChoice = await ctx.ui?.custom?.<string | null>((tui, theme, _kb, done) => {
-            const container = new Container();
-            container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
-            container.addChild(new Text(theme.fg("accent", theme.bold(`🔧 Select Model for ${tierChoice}`)), 1, 0));
-            container.addChild(new Spacer(1));
-
-            const selectList = new SelectList(modelItems, 15, {
-              selectedPrefix: (t) => theme.fg("accent", t),
-              selectedText: (t) => theme.fg("accent", t),
-              description: (t) => theme.fg("muted", t),
-              scrollInfo: (t) => theme.fg("dim", t),
-            });
-            selectList.onSelect = (item) => done(item.value);
-            selectList.onCancel = () => done(null);
-            container.addChild(selectList);
-
-            container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
-
-            return {
-              render: (w) => container.render(w),
-              invalidate: () => container.invalidate(),
-              handleInput: (data) => { selectList.handleInput(data); tui.requestRender(); },
-            };
-          });
-
-          if (modelChoice) {
-            // Save to project config
-            const configPath = join(ctx.cwd, "sdlc.config.json");
-            let projectConfig: any = {};
-            if (existsSync(configPath)) {
-              try {
-                projectConfig = JSON.parse(readFileSync(configPath, "utf-8"));
-              } catch {}
-            }
-
-            if (!projectConfig.sdlc) projectConfig.sdlc = {};
-            if (!projectConfig.sdlc.modelTiers) projectConfig.sdlc.modelTiers = {};
-            projectConfig.sdlc.modelTiers[tierChoice] = { model: modelChoice };
-
-            writeFileSync(configPath, JSON.stringify(projectConfig, null, 2));
-            ctx.ui?.notify?.(`✅ ${tierChoice} → ${modelChoice}`, "success");
-            reloadConfig(ctx.cwd);
-          }
-        }
+      // Extract tier name from choice
+      const tierName = choice.split(" (")[0];
+      const success = await switchModelByTier(pi, ctx, currentConfig, tierName);
+      if (success) {
+        const model = currentConfig.sdlc.modelTiers?.[tierName]?.model || "unknown";
+        ctx.ui?.notify?.(`✅ Tier: ${tierName} → ${model}`, "success");
       }
     },
   });
 
   // ============================================================
-  // Input Interception for Model Switching
+  // /sdlc-config - Configure tier models using native pi select
+  // ============================================================
+
+  pi.registerCommand("sdlc-config", {
+    description: "Configure SDLC model tiers (saved to sdlc.config.json)",
+    handler: async (_args, ctx) => {
+      reloadConfig(ctx.cwd);
+
+      const tiers = Object.keys(currentConfig.sdlc.modelTiers || {});
+      if (tiers.length === 0) {
+        ctx.ui?.notify?.("No model tiers to configure", "error");
+        return;
+      }
+
+      // Select tier to configure
+      const tierLabels = tiers.map(t => {
+        const model = currentConfig.sdlc.modelTiers?.[t]?.model || "not set";
+        return `${t}: ${model}`;
+      });
+
+      const tierChoice = await ctx.ui?.select?.("Select tier to configure:", tierLabels);
+      if (!tierChoice) return;
+
+      const tierName = tierChoice.split(":")[0].trim();
+
+      // Select new model using native pi select
+      const modelId = await selectModelInteractive(pi, ctx, `Select model for ${tierName}:`);
+      if (!modelId) return;
+
+      // Save to project config
+      const userConfig = loadUserConfig(ctx.cwd);
+      if (!userConfig.sdlc) userConfig.sdlc = {};
+      if (!userConfig.sdlc.modelTiers) userConfig.sdlc.modelTiers = {};
+      userConfig.sdlc.modelTiers[tierName] = { model: modelId };
+
+      saveUserConfig(ctx.cwd, userConfig);
+      reloadConfig(ctx.cwd);
+
+      ctx.ui?.notify?.(`✅ ${tierName} → ${modelId}\nSaved to sdlc.config.json`, "success");
+    },
+  });
+
+  // ============================================================
+  // /sdlc-status - Show current configuration
+  // ============================================================
+
+  pi.registerCommand("sdlc-status", {
+    description: "Show current SDLC configuration",
+    handler: async (_args, ctx) => {
+      reloadConfig(ctx.cwd);
+
+      const tiers = currentConfig.sdlc.modelTiers || {};
+      const lines = Object.entries(tiers)
+        .map(([name, tier]) => `  ${name}: ${tier.model}`)
+        .join("\n");
+
+      const hasProjectConfig = existsSync(join(ctx.cwd, "sdlc.config.json"));
+
+      ctx.ui?.notify?.(
+        `SDLC Model Tiers:\n${lines}\n\nConfig: ${hasProjectConfig ? "sdlc.config.json" : "defaults"}`,
+        "info"
+      );
+    },
+  });
+
+  // ============================================================
+  // Input Interception for Auto Model Switching
   // ============================================================
 
   pi.on("input", async (event, ctx) => {
     const text = event.text?.trim() || "";
 
-    // Match /sdlc-* or /skill:sdlc-* commands
+    // Match /sdlc-* commands
     const cmdMatch = text.match(/^\/(sdlc-(?:spec|plan|execute|verify))(?:\s|$)/);
-    const skillMatch = text.match(/^\/skill:(sdlc-(?:spec|plan|execute|verify))(?:\s|$)/);
+    if (!cmdMatch) return { action: "continue" as const };
 
-    const commandName = cmdMatch?.[1] || skillMatch?.[1];
-    if (!commandName) return { action: "continue" as const };
-
+    const commandName = cmdMatch[1];
     reloadConfig(ctx.cwd);
 
     // Find agent for this command
@@ -480,10 +435,7 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
     if (!agent?.model) return { action: "continue" as const };
 
     // Switch to agent's model tier
-    const tier = currentConfig.sdlc.modelTiers?.[agent.model];
-    if (tier?.model) {
-      await switchModel(pi, ctx, tier.model);
-    }
+    await switchModelByTier(pi, ctx, currentConfig, agent.model);
 
     return { action: "continue" as const };
   });
