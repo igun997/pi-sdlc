@@ -45,8 +45,10 @@ Task 6: worker(coding) → reviewer(fast) → ✓ PASS
 **Model assignment** (from `sdlc.config.json` or `default-config.json`):
 | Subagent | Tier | Example Model |
 |----------|------|---------------|
-| sdlc-worker | `coding` | claude-sonnet-4, gpt-4o, gemma-4 |
-| sdlc-reviewer | `fast` | gpt-4o-mini, qwen2.5-32b |
+| worker | `coding` | claude-sonnet-4, gpt-4o, gemma-4 |
+| reviewer | `fast` | gpt-4o-mini, qwen2.5-32b |
+
+**Note:** Uses pi-subagents built-in `worker` and `reviewer` agents.
 
 ## Step 0: Check Approval
 
@@ -77,42 +79,26 @@ plan_tracker_ide:
   status: in_progress
 ```
 
-```
-subagent:
-  agent: sdlc-worker
-  model: {coding tier from config}
-  task: |
-    Implement Task {N}: {task name}
-    
-    Acceptance Criteria:
-    {criteria from task file}
-    
-    Files to modify:
-    {files from task file}
-    
-    Rules:
-    - Backend: Read docs/rules/backend/tdd.md (TDD mandatory)
-    - Frontend: Read docs/rules/frontend/anti-slop.md (anti-slop mandatory)
-    - Check _references/ folder if frontend
+Use `subagent` tool with chain:
+
+```json
+{
+  "chain": [
+    {
+      "agent": "worker",
+      "model": "{coding tier model}",
+      "task": "Implement Task {N}: {task name}\n\nAcceptance Criteria:\n{criteria}\n\nFiles: {files}\n\nRULES (read before coding):\n- Backend: Read docs/rules/backend/tdd.md - TDD MANDATORY (red→green→refactor)\n- Frontend: Read docs/rules/frontend/anti-slop.md - check _references/ first\n- All: Read docs/rules/general/git.md - security review before commit"
+    },
+    {
+      "agent": "reviewer",
+      "model": "{fast tier model}",
+      "task": "Verify Task {N}: {task name}\n\nCriteria:\n{criteria}\n\nRun: {testCommand}\nBuild: {buildCommand}\n\nReturn PASS or FAIL with evidence."
+    }
+  ]
+}
 ```
 
-### 2b. Spawn Reviewer (auto after worker)
-
-```
-subagent:
-  agent: sdlc-reviewer
-  model: {fast tier from config}
-  task: |
-    Verify Task {N}: {task name}
-    
-    Check against criteria:
-    {criteria from task file}
-    
-    Run: {testCommand}
-    Build: {buildCommand}
-    
-    Return PASS or FAIL with evidence.
-```
+Chain runs worker → reviewer automatically. No manual spawn needed.
 
 ### 2c. Handle Result
 

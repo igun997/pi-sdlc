@@ -15,9 +15,6 @@
       "skills/sdlc-verify/SKILL.md",
       "skills/sdlc-choose/SKILL.md"
     ],
-    "agents": [
-      "agents/subagents"
-    ],
     "requiredPackages": ["pi-memctx", "npm:pi-subagents"]
   },
   "dependencies": {
