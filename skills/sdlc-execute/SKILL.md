@@ -4,6 +4,8 @@ description: Execute tasks with pre/post drift checks and verification gates. Us
 ---
 
 > **Related skills:** Create plan first with `/skill:sdlc-plan`. Final verification with `/skill:sdlc-verify`.
+>
+> **Rules:** Backend tasks follow `docs/rules/BACKEND.md`. Frontend tasks follow `docs/rules/FRONTEND.md`. All code follows `docs/rules/GENERAL.md`.
 
 # SDLC Execute
 
@@ -14,6 +16,11 @@ Execute tasks one by one with drift prevention (pre-check), drift detection (pos
 **Announce at start:** "I'm using the sdlc-execute skill to implement the plan with verification gates."
 
 **Dependency:** Requires pi-memctx for context recall.
+
+**Before starting:** Read the rules documents:
+- `docs/rules/GENERAL.md` - applies to all code
+- `docs/rules/BACKEND.md` - for backend tasks (TDD mandatory)
+- `docs/rules/FRONTEND.md` - for frontend tasks (anti-slop mandatory)
 
 ## The Loop
 

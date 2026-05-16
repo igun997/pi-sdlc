@@ -12,6 +12,8 @@ Inspired by [Ralph Loop](https://ralphloop.sh/) - PRD-driven, task-based executi
 - **Hard stop on failure** - no silent failures
 - **Plan tracker integration** - visibility into task progress
 - **memctx sync** - durable memory via pi-memctx
+- **Backend rules** - TDD mandatory, SOLID principles, security
+- **Frontend rules** - anti-slop mandatory, accessibility, design tokens
 
 ## Installation
 
@@ -114,6 +116,27 @@ project/
         └── 60-observations/
             └── feature-tasks.md
 ```
+
+## Rules
+
+Comprehensive development rules enforced during execution:
+
+- **[General Rules](docs/rules/GENERAL.md)** - applies to all code
+  - Clean code principles (DRY, YAGNI, KISS)
+  - Git practices, documentation standards
+  - Verification protocol (evidence before claims)
+  
+- **[Backend Rules](docs/rules/BACKEND.md)** - TDD mandatory
+  - Red → Green → Refactor cycle required
+  - SOLID principles, repository pattern
+  - API design, error handling, observability
+  - OWASP security practices
+  
+- **[Frontend Rules](docs/rules/FRONTEND.md)** - anti-slop mandatory
+  - 3-reference rule (find existing patterns first)
+  - Design tokens, no generic AI aesthetics
+  - Accessibility (a11y) checklist
+  - XSS prevention, secure data handling
 
 ## Design
 

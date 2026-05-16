@@ -9,6 +9,10 @@ pi-sdlc is a pi extension providing SDLC skills: spec → plan → execute → v
 ## Key Files
 
 - `skills/*/SKILL.md` - skill definitions (read these for behavior)
+- `docs/rules/` - development rules (MUST READ)
+  - `GENERAL.md` - universal rules for all code
+  - `BACKEND.md` - TDD, SOLID, API design, security
+  - `FRONTEND.md` - anti-slop, components, a11y, security
 - `templates/` - spec, task, config templates
 - `package.json` - pi extension manifest
 - `docs/plans/` - design documents
