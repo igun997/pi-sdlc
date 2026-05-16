@@ -97,6 +97,26 @@ Evidence: show red output, then green output.
 3. Use project design tokens
 4. No generic AI aesthetics
 
+### Edit Tool Best Practices
+
+**Avoid overlapping edits:**
+- Each `oldText` must be unique and non-overlapping
+- If changing nearby lines, merge into ONE edit
+- Never target same region twice in one call
+
+**Good:**
+```json
+{"edits": [{"oldText": "line1\nline2\nline3", "newText": "new1\nnew2\nnew3"}]}
+```
+
+**Bad:**
+```json
+{"edits": [
+  {"oldText": "line1\nline2", "newText": "new1\nnew2"},
+  {"oldText": "line2\nline3", "newText": "new2\nnew3"}
+]}
+```
+
 **Do NOT claim completion yet.**
 
 ## Step 4: POST-CHECK
