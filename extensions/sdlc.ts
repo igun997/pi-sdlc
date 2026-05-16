@@ -502,10 +502,48 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
   // Input Interception for Auto Model Switching
   // ============================================================
 
+  // Natural language triggers: "let brainstorm", "let plan", etc.
+  const nlTriggers: Record<string, string> = {
+    "brainstorm": "sdlc-spec",
+    "spec": "sdlc-spec",
+    "plan": "sdlc-plan",
+    "execute": "sdlc-execute",
+    "exec": "sdlc-execute",
+    "implement": "sdlc-execute",
+    "verify": "sdlc-verify",
+    "check": "sdlc-verify",
+  };
+
   pi.on("input", async (event, ctx) => {
     const text = event.text?.trim() || "";
 
-    // Match /sdlc-* commands
+    // Check for natural language trigger: "let <keyword> ..." or "lets <keyword> ..."
+    const nlMatch = text.match(/^lets?\s+(brainstorm|spec|plan|execute|exec|implement|verify|check)(?:\s+(.*))?$/i);
+    if (nlMatch) {
+      const keyword = nlMatch[1].toLowerCase();
+      const rest = nlMatch[2] || "";
+      const targetCommand = nlTriggers[keyword];
+
+      if (targetCommand) {
+        reloadConfig(ctx.cwd);
+        const agent = agents.find(a => (a.command || a.name) === targetCommand);
+        
+        if (agent) {
+          // Switch model tier
+          if (agent.model) {
+            await switchModelByTier(pi, ctx, currentConfig, agent.model);
+          }
+
+          // Transform to slash command
+          return {
+            action: "transform" as const,
+            text: `/${targetCommand} ${rest}`.trim(),
+          };
+        }
+      }
+    }
+
+    // Match /sdlc-* commands for model switching
     const cmdMatch = text.match(/^\/(sdlc-(?:spec|plan|execute|verify))(?:\s|$)/);
     if (!cmdMatch) return { action: "continue" as const };
 
