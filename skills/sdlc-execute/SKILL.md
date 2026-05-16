@@ -15,7 +15,7 @@ description: Execute tasks with pre/post drift checks and verification gates. Us
 
 Execute tasks with drift prevention (pre-check), drift detection (post-check), and gates (tests > checklist > build). Hard stop on failure.
 
-**Dependency:** Requires pi-memctx.
+**Dependencies:** Requires pi-memctx, pi-subagents.
 
 ## The Loop
 
@@ -69,7 +69,9 @@ If **APPROVED**, skip to verify handoff. All tasks already complete.
 **autoAdvance: false** → Wait for confirmation.
 **autoAdvance: true** → Show summary, proceed.
 
-## Step 3: IMPLEMENT
+## Step 3: IMPLEMENT (via subagent)
+
+Use `worker` subagent for implementation with proper model:
 
 ```
 plan_tracker_ide:
@@ -77,6 +79,31 @@ plan_tracker_ide:
   index: {N-1}
   status: in_progress
 ```
+
+**Delegate to worker subagent:**
+
+```
+subagent:
+  agent: worker
+  model: {coding tier model from config}
+  task: |
+    Implement Task {N}: {task name}
+    
+    Acceptance Criteria:
+    {criteria from task file}
+    
+    Files to modify:
+    {files from task file}
+    
+    Rules to follow:
+    - Read {rules path based on task type}
+    - {backend: TDD required}
+    - {frontend: anti-slop required}
+```
+
+Worker will implement and return. Then verify output.
+
+**Alternative: Direct implementation** (if simple task)
 
 Follow task steps. Apply rules by type:
 

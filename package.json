@@ -15,7 +15,10 @@
       "skills/sdlc-verify/SKILL.md",
       "skills/sdlc-choose/SKILL.md"
     ],
-    "dependencies": ["pi-memctx"]
+    "agents": [
+      "agents/subagents"
+    ],
+    "dependencies": ["pi-memctx", "npm:pi-subagents"]
   },
   "dependencies": {
     "gray-matter": "^4.0.3"
