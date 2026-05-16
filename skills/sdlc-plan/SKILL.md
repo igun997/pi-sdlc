@@ -3,40 +3,23 @@ name: sdlc-plan
 description: Break specs into ordered tasks with acceptance criteria. Use after sdlc-spec to create executable task breakdown.
 ---
 
-> **Related skills:** Create spec first with `/skill:sdlc-spec`. Execute with `/skill:sdlc-execute`.
+> **Model auto-switch:** Extension switches to plan-tier model automatically.
 >
-> **Rules:** See `docs/rules/README.md`. Assign task types so executor loads correct rules.
+> **Rules:** Assign task types so executor loads correct rules from `docs/rules/`.
+>
+> **Previous:** `/skill:sdlc-spec` | **Next:** `/skill:sdlc-execute`
 
 # SDLC Plan
 
-## Model Selection
-
-Set tier via `SDLC_TIER` env or check project config:
-
-```bash
-export SDLC_TIER=high   # or: medium, budget
-```
-
-| Tier | Model | Why |
-|------|-------|-----|
-| 💎 `high` | `claude-opus` | Best task breakdown |
-| ⚡ `medium` | `gemini-2.5-pro` | Good planning |
-| 💰 `budget` | `deepseek-r1` | Strong reasoning |
-
 ## Overview
 
-Transform spec into ordered tasks with testable acceptance criteria, dependencies, and scope estimates. Initialize plan tracker for progress visibility.
+Transform spec into ordered tasks with testable criteria, dependencies, and scope estimates.
 
-**Announce at start:** "I'm using the sdlc-plan skill to break down the spec into tasks."
+**Dependency:** Requires pi-memctx.
 
-**Dependency:** Requires pi-memctx for durable memory sync.
-
-## The Process
+## Process
 
 ### Step 1: Load Spec
-
-1. If path provided: read from `docs/specs/{path}/spec.md`
-2. If not provided: search memctx for recent specs
 
 ```
 memctx_search:
@@ -44,111 +27,66 @@ memctx_search:
   mode: keyword
 ```
 
-3. Confirm spec found: "Found spec: {title}. Proceed with breakdown?"
+Or read from `docs/specs/{path}/spec.md`.
 
-### Step 2: Analyze Requirements
-
-1. Read spec requirements and acceptance criteria
-2. Identify natural task boundaries
-3. Map dependencies between tasks
-4. Estimate scope per task (S/M/L)
-
-### Step 3: Create Task Breakdown
+### Step 2: Create Tasks
 
 For each task, create `docs/specs/{feature}/tasks/NN-{name}.md`:
 
 ```markdown
-# Task NN: {Task Name}
+# Task NN: {Name}
 
 **Scope:** S | M | L
 **Type:** backend | frontend | mixed
-**Dependencies:** [Task numbers that must complete first]
+**Dependencies:** [Task numbers]
 
 ## Description
-
-[What this task accomplishes]
+[What this accomplishes]
 
 ## Acceptance Criteria
-
-- [ ] [Testable criterion 1]
-- [ ] [Testable criterion 2]
+- [ ] [Criterion 1]
+- [ ] [Criterion 2]
 
 ## Files
-
-- Create: `exact/path/to/new/file.ts`
-- Modify: `exact/path/to/existing.ts`
-- Test: `tests/path/to/test.ts`
+- Create: `path/to/new.ts`
+- Modify: `path/to/existing.ts`
+- Test: `tests/path.ts`
 
 ## Steps
-
-1. [Step 1 - specific action]
-2. [Step 2 - specific action]
-3. [Step 3 - specific action]
+1. [Specific action]
+2. [Specific action]
 
 ## Verification
-
-- Test command: `npm test -- {pattern}`
-- Expected: All tests pass
+- Test: `npm test -- {pattern}`
 ```
 
-### Task Type Rules
+### Task Types
 
-**Type: backend** (API, services, logic, data)
-- TDD mandatory
-- Steps must include: write test → red → implement → green
-- Test file required in Files section
+| Type | Executor Rules |
+|------|----------------|
+| `backend` | TDD mandatory (red→green→refactor) |
+| `frontend` | Anti-slop mandatory, reference existing |
+| `mixed` | Backend: TDD, Frontend: anti-slop |
 
-**Type: frontend** (UI, components, styling)
-- Anti-slop rules apply
-- Steps must include: find existing patterns → reference → implement
-- Must list 3+ existing components to reference
-
-**Type: mixed** (full-stack features)
-- Backend portions: TDD
-- Frontend portions: anti-slop
-- Split steps clearly by type
-
-### Step 4: Sync to memctx
+### Step 3: Sync to memctx
 
 ```
 memctx_save:
   type: observation
   title: {feature} Tasks
   path: 60-observations/{feature}-tasks.md
-  content: |
-    # {Feature} Task Index
-    
-    Spec: [[20-context/{feature}-spec]]
-    
-    ## Tasks
-    
-    1. [[#task-01]] - {name} (S/M/L)
-    2. [[#task-02]] - {name} (S/M/L)
-    ...
-    
-    ## Task Details
-    
-    ### task-01
-    {summary + criteria}
-    
-    ### task-02
-    {summary + criteria}
   tags: [sdlc, plan, {feature}]
 ```
 
-### Step 5: Initialize Plan Tracker
+### Step 4: Init Tracker
 
 ```
 plan_tracker_ide:
   action: init
-  tasks: [
-    "Task 01: {name}",
-    "Task 02: {name}",
-    ...
-  ]
+  tasks: ["Task 01: {name}", "Task 02: {name}"]
 ```
 
-### Step 6: Commit
+### Step 5: Commit
 
 ```bash
 git add docs/specs/{feature}/tasks/
@@ -157,44 +95,14 @@ git commit -m "docs: add task breakdown for {feature}"
 
 ## Task Granularity
 
-**Good task size:**
-- 15-60 minutes of work
-- Single responsibility
-- Clear done state
-- Independently testable
+**Good:** 15-60 min, single responsibility, independently testable.
 
-**Split if:**
-- Multiple unrelated changes
-- More than 3 files created
-- More than 2 hours estimated
+**Split if:** Multiple unrelated changes, >3 files, >2 hours.
 
-**Merge if:**
-- Trivially small (<5 min)
-- Tightly coupled changes
-
-## Dependency Rules
-
-- Tasks with no dependencies come first
-- Parallel tasks have same dependency set
-- Circular dependencies = design problem, resolve first
-
-## Plan Tracker Rules
-
-**Trigger only on:**
-- `init` - once after task breakdown complete
-- Never during planning
+**Merge if:** <5 min, tightly coupled.
 
 ## Handoff
 
-After plan saved and committed:
-
-**"Plan complete with {N} tasks. Saved to `docs/specs/{feature}/tasks/`.**
-
-**Plan tracker initialized. Check status anytime with:**
-```
-plan_tracker_ide(action: "status")
-```
-
-**Ready to execute?**
-- **Yes:** Use `/skill:sdlc-execute`
-- **No:** Plan is ready for later execution"
+> Plan complete: {N} tasks in `docs/specs/{feature}/tasks/`
+>
+> Ready to execute? → `/skill:sdlc-execute`

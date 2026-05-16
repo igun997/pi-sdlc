@@ -1,85 +1,100 @@
 ---
 name: sdlc-choose
-description: Configure SDLC model tiers. Use /sdlc-choose command for interactive TUI or /sdlc-tier for quick switching.
+description: Configure SDLC model tiers. Interactive TUI via /sdlc-choose, quick switch via /sdlc-tier.
 ---
 
 # SDLC Choose
 
-> **This skill documents the `/sdlc-choose` extension command.**
->
-> The actual interactive UI is provided by `extensions/sdlc-choose.ts`.
+> **This skill documents extension commands.** The TUI is in `extensions/sdlc-choose.ts`.
 
 ## Commands
 
-### Interactive Configuration
+### /sdlc-choose
 
-```bash
-/sdlc-choose              # Open interactive TUI menu
-/sdlc-choose show         # Show current config
-/sdlc-choose high         # Quick set tier to high
-/sdlc-choose budget       # Quick set tier to budget
+Interactive TUI for model configuration:
+
+```
+/sdlc-choose              # Open menu
+/sdlc-choose show         # Show current
+/sdlc-choose high         # Quick set tier
 /sdlc-choose list         # List available models
 ```
 
-### Quick Tier Switch
+### /sdlc-tier
 
-```bash
-/sdlc-tier                # Show current tier
-/sdlc-tier high           # Set to high tier
-/sdlc-tier medium         # Set to medium tier
-/sdlc-tier budget         # Set to budget tier
+Quick tier switch:
+
+```
+/sdlc-tier                # Show current
+/sdlc-tier high           # Set tier
+/sdlc-tier budget
 ```
 
-## Interactive Menu
+### /sdlc-model
 
-When running `/sdlc-choose` without arguments:
+Direct model switch:
 
-1. **Set tier** - Choose high/medium/budget presets
-2. **Customize models** - Pick specific models per phase
-3. **Show current** - Display current configuration
-4. **Save as custom tier** - Save current models as named tier
+```
+/sdlc-model local-llm/alibaba/qwen-max
+/sdlc-model anthropic/claude-sonnet-4-6
+```
 
-## Default Tiers
+## Auto Model Switch
 
-| Tier | Spec/Plan | Execute | Verify |
-|------|-----------|---------|--------|
-| 💎 `high` | claude-opus-4-7 | claude-sonnet-4-6 | claude-sonnet-4-6 |
-| ⚡ `medium` | gemini-2.5-pro | gpt-4o | gpt-4o-mini |
-| 💰 `budget` | deepseek-r1 | deepseek-coder-v3 | gemini-flash |
+Extension auto-switches model when SDLC skills invoked:
 
-## Configuration File
+| Skill | Config Key | Purpose |
+|-------|------------|---------|
+| `/skill:sdlc-spec` | `models.{tier}.spec` | Reasoning, planning |
+| `/skill:sdlc-plan` | `models.{tier}.plan` | Task breakdown |
+| `/skill:sdlc-execute` | `models.{tier}.execute` | Coding |
+| `/skill:sdlc-verify` | `models.{tier}.verify` | Review, testing |
 
-Saves to `sdlc.config.json` in project root:
+## Config File
+
+`sdlc.config.json` in project root:
 
 ```json
 {
   "tier": "medium",
   "models": {
     "high": {
-      "spec": "claude-opus-4-7",
-      "plan": "claude-opus-4-6",
-      "execute": "claude-sonnet-4-6",
-      "verify": "claude-sonnet-4-6"
+      "spec": "anthropic/claude-opus-4-7",
+      "plan": "anthropic/claude-opus-4-6",
+      "execute": "anthropic/claude-sonnet-4-6",
+      "verify": "anthropic/claude-sonnet-4-6"
     },
     "medium": {
-      "spec": "gemini-2.5-pro",
-      "plan": "gemini-2.5-pro",
-      "execute": "gpt-4o",
-      "verify": "gpt-4o-mini"
+      "spec": "google/gemini-2.5-pro",
+      "plan": "google/gemini-2.5-pro",
+      "execute": "openai/gpt-4o",
+      "verify": "openai/gpt-4o-mini"
     },
     "budget": {
-      "spec": "deepseek-r1",
-      "plan": "deepseek-r1",
-      "execute": "deepseek-coder-v3",
-      "verify": "gemini-flash"
+      "spec": "deepseek/deepseek-r1",
+      "plan": "deepseek/deepseek-r1",
+      "execute": "deepseek/deepseek-coder-v3",
+      "verify": "google/gemini-flash"
     }
   }
 }
 ```
 
-## Environment Variable
+## Model ID Format
 
-Override config with `SDLC_TIER`:
+Use **full provider/model ID** to avoid conflicts with proxies:
+
+```
+# Format: provider/model-id
+local-llm/alibaba/qwen-max
+anthropic/claude-sonnet-4-6
+google/gemini-2.5-pro
+openai/gpt-4o
+```
+
+Run `/sdlc-choose list` or `pi --list-models` to see available IDs.
+
+## Environment Override
 
 ```bash
 export SDLC_TIER=budget
@@ -88,4 +103,4 @@ SDLC_TIER=high pi "/skill:sdlc-spec"
 
 ## Status Bar
 
-Shows current tier in footer when `sdlc.config.json` exists.
+Shows `SDLC: {tier}` when `sdlc.config.json` exists.

@@ -3,110 +3,63 @@ name: sdlc-execute
 description: Execute tasks with pre/post drift checks and verification gates. Use after sdlc-plan to implement with accuracy guarantees.
 ---
 
-> **Related skills:** Create plan first with `/skill:sdlc-plan`. Final verification with `/skill:sdlc-verify`.
+> **Model auto-switch:** Extension switches to execute-tier model automatically.
 >
-> **Rules:** See `docs/rules/README.md` for rule index. Load only relevant rules per task type.
+> **Rules:** Load from `docs/rules/` based on task type. See README.md for index.
+>
+> **Previous:** `/skill:sdlc-plan` | **Next:** `/skill:sdlc-verify`
 
 # SDLC Execute
 
-## Model Selection
-
-Set tier via `SDLC_TIER` env or check project config:
-
-```bash
-export SDLC_TIER=medium   # or: high, budget
-```
-
-| Tier | Model | Why |
-|------|-------|-----|
-| 💎 `high` | `claude-sonnet` | Best coding quality |
-| ⚡ `medium` | `gpt-4o` | Fast + capable |
-| 💰 `budget` | `deepseek-coder-v3` | Excellent value |
-
 ## Overview
 
-Execute tasks one by one with drift prevention (pre-check), drift detection (post-check), and verification gates (tests > checklist > build). Hard stop on any failure.
+Execute tasks with drift prevention (pre-check), drift detection (post-check), and gates (tests > checklist > build). Hard stop on failure.
 
-**Announce at start:** "I'm using the sdlc-execute skill to implement the plan with verification gates."
-
-**Dependency:** Requires pi-memctx for context recall.
-
-**Before starting:** Load relevant rules based on task type:
-
-| Task Type | Load Rules |
-|-----------|------------|
-| Frontend | `frontend/anti-slop.md`, `frontend/components.md` |
-| Backend | `backend/tdd.md`, `backend/api-design.md` |
-| Go | `golang/patterns.md`, `golang/performance.md` |
-| Rust | `rust/patterns.md`, `rust/async.md` |
-| Performance | `performance/low-latency.md`, `performance/database.md` |
-| All tasks | `general/verification.md` |
+**Dependency:** Requires pi-memctx.
 
 ## The Loop
 
-For each task in plan:
+```
+PRE-CHECK  → Confirm understanding
+    ↓
+IMPLEMENT  → Code the task
+    ↓
+POST-CHECK → Compare vs criteria
+    ↓
+GATES      → tests > checklist > build
+    ↓
+COMPLETE   → Update tracker, advance
+```
 
-```
-┌─────────────┐
-│  PRE-CHECK  │ ← Confirm understanding before coding
-└──────┬──────┘
-       ▼
-┌─────────────┐
-│  IMPLEMENT  │ ← Code the task
-└──────┬──────┘
-       ▼
-┌─────────────┐
-│ POST-CHECK  │ ← Compare result vs criteria
-└──────┬──────┘
-       ▼
-┌─────────────┐
-│   GATES     │ ← tests > checklist > build
-└──────┬──────┘
-       ▼
-┌─────────────┐
-│  COMPLETE   │ ← Update tracker, advance
-└─────────────┘
-```
+## Load Rules
+
+**Before coding, read relevant rules:**
+
+| Task Type | Rules to Load |
+|-----------|---------------|
+| Frontend | `docs/rules/frontend/anti-slop.md`, `components.md` |
+| Backend | `docs/rules/backend/tdd.md`, `api-design.md` |
+| Go | `docs/rules/golang/patterns.md` |
+| Rust | `docs/rules/rust/patterns.md` |
+| All | `docs/rules/general/verification.md` |
 
 ## Step 1: Load Context
 
-1. Read config from `docs/specs/{feature}/config.json`
-2. Get current task from plan tracker:
+1. Read `docs/specs/{feature}/config.json`
+2. Get current task: `plan_tracker_ide(action: "status")`
+3. Read task file
 
-```
-plan_tracker_ide:
-  action: status
-```
-
-3. Read task file from `docs/specs/{feature}/tasks/NN-{name}.md`
-4. If task not found locally, recall from memctx:
-
-```
-memctx_search:
-  query: "{feature} task {N}"
-  mode: keyword
-```
-
-## Step 2: PRE-CHECK (Drift Prevention)
-
-**Purpose:** Confirm understanding before coding.
+## Step 2: PRE-CHECK
 
 1. Summarize task in one paragraph
 2. List acceptance criteria
-3. State what files will be touched
+3. State files to touch
 4. Ask: "Task {N}: {summary}. Proceed?"
 
-**If `autoAdvance: false`:**
-- Wait for user "yes" / "proceed" / "go"
-- If user has concerns, address them first
-
-**If `autoAdvance: true`:**
-- Show summary, proceed without waiting
-- User can interrupt with "stop" or "wait"
+**autoAdvance: false** → Wait for confirmation.
+**autoAdvance: true** → Show summary, proceed.
 
 ## Step 3: IMPLEMENT
-
-1. Update tracker:
 
 ```
 plan_tracker_ide:
@@ -115,196 +68,67 @@ plan_tracker_ide:
   status: in_progress
 ```
 
-2. Follow task steps exactly
-3. **Backend code: TDD required** (see TDD Rules below)
-4. **UI code: Anti-slop required** (see Anti-Slop Rules below)
-5. Implement minimal code to satisfy criteria
-6. **Do NOT claim completion yet**
+Follow task steps. Apply rules by type:
 
----
-
-## TDD Rules (Backend)
-
-**Mandatory for all backend/API/service/logic code.**
+### Backend: TDD Required
 
 ```
-RED    → Write failing test first
+RED    → Write failing test
 GREEN  → Minimal code to pass
-REFACTOR → Clean up, tests still pass
+REFACTOR → Clean, tests pass
 ```
 
-**The law:**
-1. Write test BEFORE implementation
-2. Run test, confirm it FAILS (red)
-3. Write minimal code to pass
-4. Run test, confirm it PASSES (green)
-5. Refactor if needed, tests still green
-6. Commit
+Evidence: show red output, then green output.
 
-**Violations:**
-- Writing implementation before test = violation
-- Skipping red phase = violation
-- "I'll add tests later" = violation
+### Frontend: Anti-Slop Required
 
-**Evidence required:**
-```
-# Show red:
-$ npm test
-FAIL: expected X but got undefined
+1. Check for `_references/` folder first
+2. Find 3+ existing components to reference
+3. Use project design tokens
+4. No generic AI aesthetics
 
-# Show green:
-$ npm test  
-PASS: 1/1 tests
-```
+**Do NOT claim completion yet.**
 
----
+## Step 4: POST-CHECK
 
-## Anti-Slop Rules (UI/Frontend)
+Compare implementation vs criteria. If drift:
 
-**Mandatory for all UI/component/styling code.**
+- **HARD STOP**
+- Report: "Drift detected: {criterion} vs {actual}"
+- Ask: "How to resolve?"
 
-### Step 0: Check for `_references/` Folder
-
-**BEFORE any UI work, check if project has `_references/` folder:**
-
-```bash
-ls _references/ 2>/dev/null
-```
-
-**If exists, READ these files first:**
-1. `_references/README.md` - brand voice, visual foundations
-2. `_references/SKILL.md` - quick rules summary
-3. `_references/colors_and_type.css` - ALL design tokens
-
-**Use tokens from CSS vars:**
-```css
-/* From _references/colors_and_type.css */
---bright: #FF6B1C;   /* Use: var(--bright) */
---paper: #FBF7EE;    /* Use: var(--paper) */
---fg-1: #0D1A14;     /* Use: var(--fg-1) */
-```
-
-**Copy component patterns from `_references/ui_kits/`**
-
-**Use logo/assets from `_references/assets/`**
-
-### What is AI Slop?
-
-Low-quality AI-generated UI with:
-- Generic patterns (Inter font, purple gradients, glassmorphism)
-- Cookie-cutter layouts
-- Buzzword-heavy copy
-- No project personality
-- **Ignoring `_references/` when it exists**
-
-### The Rules
-
-**1. Reference existing sources first**
-
-Priority order:
-1. `_references/` folder (if exists) - highest priority
-2. Existing components in codebase - 3+ examples
-3. Ask user for direction - if nothing exists
-
-**2. No generic AI aesthetics**
-
-| Slop Pattern | Instead |
-|--------------|--------|
-| Purple-blue gradients | Use project color tokens |
-| Glassmorphism cards | Match existing card style |
-| Inter/default fonts | Use project typography |
-| "Modern" buzzwords | Clear, specific copy |
-| Excessive animations | Match existing motion |
-
-**3. Component checklist**
-
-Before writing UI component:
-- [ ] Found 3+ similar components in codebase?
-- [ ] Using project design tokens?
-- [ ] Matches existing spacing/layout patterns?
-- [ ] Copy reviewed (no generic AI text)?
-- [ ] Accessibility considered?
-
-**4. When unsure, ASK**
-
-```
-"I see two patterns in codebase for cards:
-- Pattern A: src/components/Card.tsx (shadow, rounded)
-- Pattern B: src/components/Panel.tsx (border, square)
-
-Which should I follow for this feature?"
-```
-
-**Violations:**
-- Inventing new design patterns = violation
-- Ignoring existing components = violation
-- Generic placeholder copy = violation
-- "Looks modern" without codebase reference = violation
-
-## Step 4: POST-CHECK (Drift Detection)
-
-**Purpose:** Compare what was built vs what spec said.
-
-For each acceptance criterion:
-1. Check if implementation satisfies it
-2. If drift detected:
-   - **HARD STOP**
-   - Report: "Drift detected in Task {N}:"
-   - Show: criterion vs actual implementation
-   - Ask: "How to resolve?"
-
-**No drift = proceed to gates.**
-
-## Step 5: VERIFICATION GATES
+## Step 5: GATES
 
 Execute in order: **tests > checklist > build**
 
 ### Gate 1: Tests
 
 ```bash
-{testCommand from config, or auto-detect}
+{testCommand from config}
 ```
 
-**Pass criteria:**
-- Exit code 0
-- 0 failures in output
-- Show actual output as evidence
-
-**If fail: HARD STOP**
-- Show test output
-- Report which tests failed
-- Do not proceed
+Pass: exit 0, 0 failures. Show output.
+Fail: **HARD STOP**, show failures.
 
 ### Gate 2: Checklist
-
-Walk through task acceptance criteria:
 
 ```
 Acceptance Criteria:
 - [x] Criterion 1 - VERIFIED: {evidence}
 - [x] Criterion 2 - VERIFIED: {evidence}
-- [ ] Criterion 3 - FAILED: {what's missing}
 ```
 
-**If any unchecked: HARD STOP**
+Any unchecked: **HARD STOP**
 
 ### Gate 3: Build
 
 ```bash
-{buildCommand from config, or auto-detect}
+{buildCommand from config}
 ```
 
-**Pass criteria:**
-- Exit code 0
-- No errors in output
-
-**If fail: HARD STOP**
+Pass: exit 0. Fail: **HARD STOP**
 
 ## Step 6: COMPLETE
-
-All gates passed:
-
-1. Update tracker:
 
 ```
 plan_tracker_ide:
@@ -313,96 +137,34 @@ plan_tracker_ide:
   status: complete
 ```
 
-2. Save to memctx:
+Sync to memctx:
 
 ```
 memctx_save:
   type: action
   title: {feature} Task {N} Complete
   path: 40-actions/YYYY-MM-DD-{feature}-task-{N}.md
-  content: |
-    # Task {N}: {name}
-    
-    Spec: [[20-context/{feature}-spec]]
-    Tasks: [[60-observations/{feature}-tasks#task-{N}]]
-    
-    ## What was built
-    {summary of changes}
-    
-    ## Files changed
-    - {file1}
-    - {file2}
-    
-    ## Verification
-    - Tests: PASS
-    - Checklist: PASS
-    - Build: PASS
   tags: [sdlc, task, {feature}]
 ```
 
-3. Commit:
+Commit:
 
 ```bash
-git add .
 git commit -m "feat({feature}): complete task {N} - {name}"
 ```
 
-4. Advance:
-
-**If `autoAdvance: true` and more tasks:**
-- "Task {N} complete. Advancing to Task {N+1}..."
-- Go to Step 2 (PRE-CHECK) for next task
-
-**If `autoAdvance: false`:**
-- "Task {N} complete. Say 'next' to continue."
-- Wait for user
-
-**If no more tasks:**
-- "All tasks complete. Ready for final verification."
-- Suggest: `/skill:sdlc-verify`
-
-## Plan Tracker Rules
-
-**Trigger only on state changes:**
-- `in_progress` - when starting implementation (Step 3)
-- `complete` - when all gates pass (Step 6)
-
-**Never trigger:**
-- During coding
-- During verification
-- On partial progress
+**autoAdvance: true** → Proceed to next task.
+**autoAdvance: false** → "Say 'next' to continue."
 
 ## Hard Stop Protocol
 
-On any failure:
-
-1. **Stop immediately** - no further tasks
-2. **Report clearly:**
-   - Which gate failed
-   - Exact error/output
-   - Which criterion unmet
-3. **Wait for resolution** - do not guess or retry automatically
-4. **After fix:** Re-run failed gate, then continue
-
-## Config Reference
-
-```json
-{
-  "autoAdvance": false,    // wait for user between tasks
-  "gates": ["tests", "checklist", "build"],
-  "gateOrder": "tests > checklist > build",
-  "onFail": "stop",        // hard stop on failure
-  "testCommand": "npm test",
-  "buildCommand": "npm run build"
-}
-```
+1. Stop immediately
+2. Report: which gate, exact error
+3. Wait for resolution
+4. After fix: re-run failed gate
 
 ## Handoff
 
-After all tasks complete:
-
-**"All {N} tasks complete and verified.**
-
-**Ready for final verification?**
-- **Yes:** Use `/skill:sdlc-verify`
-- **No:** Review changes first, then verify"
+> All {N} tasks complete.
+>
+> Ready for final verification? → `/skill:sdlc-verify`
