@@ -590,7 +590,7 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
   // Inject Rules Path into System Prompt
   // ============================================================
 
-  pi.on("before_agent_start", async (_event, ctx) => {
+  pi.on("before_agent_start", async (event, _ctx) => {
     const rulesPath = join(pkgRoot, "docs", "rules");
     
     // Only inject if rules exist
@@ -614,11 +614,7 @@ Available rule categories:
 `;
 
     return {
-      systemPromptOptions: {
-        sections: {
-          sdlcRules: rulesNote,
-        },
-      },
+      systemPrompt: event.systemPrompt + rulesNote,
     };
   });
 }
