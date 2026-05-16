@@ -342,6 +342,53 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
   }
 
   // ============================================================
+  // Command Aliases (shorthand invocations)
+  // ============================================================
+
+  const aliases: Record<string, string> = {
+    "brainstorm": "sdlc-spec",
+    "spec": "sdlc-spec",
+    "plan": "sdlc-plan",
+    "execute": "sdlc-execute",
+    "exec": "sdlc-execute",
+    "verify": "sdlc-verify",
+    "check": "sdlc-verify",
+  };
+
+  for (const [alias, target] of Object.entries(aliases)) {
+    const targetAgent = agents.find(a => (a.command || a.name) === target);
+    if (!targetAgent) continue;
+
+    pi.registerCommand(alias, {
+      description: `Alias for /${target}`,
+      handler: async (args, ctx) => {
+        reloadConfig(ctx.cwd);
+
+        if (targetAgent.model) {
+          await switchModelByTier(pi, ctx, currentConfig, targetAgent.model);
+        }
+
+        const parts: string[] = [];
+        parts.push(targetAgent.content);
+
+        if (targetAgent.skills) {
+          parts.push(buildSkillPrompt(targetAgent.skills));
+        }
+
+        if (args) {
+          parts.push(`\n## Task\n\n${args}`);
+        }
+
+        (ctx.ui as any)?.appendEntry?.({
+          type: "user",
+          message: { role: "user", content: parts.join("\n\n") },
+          timestamp: Date.now(),
+        });
+      },
+    });
+  }
+
+  // ============================================================
   // /sdlc-tier - Quick tier switching using native pi select
   // ============================================================
 
