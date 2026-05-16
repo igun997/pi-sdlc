@@ -551,6 +551,40 @@ export default function planTrackerExtension(pi: ExtensionAPI): void {
   });
 
   // ============================================================
+  // Shortcuts for Quick Approval
+  // ============================================================
+
+  pi.registerShortcut("ctrl+shift+a", {
+    description: "Approve current SDLC phase",
+    handler: async (_args, ctx) => {
+      // Determine current phase from tracker or context
+      const phases: Phase[] = ["spec", "plan", "execute", "verify"];
+      const unapproved = phases.filter(p => !state.approvals.find(a => a.phase === p));
+      
+      if (unapproved.length === 0) {
+        ctx.ui?.notify?.("All phases approved", "info");
+        return;
+      }
+
+      // Show select for which phase to approve
+      const selected = await ctx.ui?.select?.({
+        title: "Approve Phase",
+        items: unapproved.map(p => ({ label: p, value: p })),
+      });
+
+      if (!selected) return;
+
+      state.approvals.push({
+        phase: selected.value as Phase,
+        approvedAt: Date.now(),
+      });
+
+      updateStatusBar(ctx);
+      ctx.ui?.notify?.(`✓ ${selected.value} approved`, "success");
+    },
+  });
+
+  // ============================================================
   // Commands
   // ============================================================
 
