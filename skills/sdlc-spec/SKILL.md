@@ -1,9 +1,12 @@
 ---
 name: sdlc-spec
 description: Create feature specs through collaborative brainstorming. Use when starting new features, writing requirements, or defining acceptance criteria.
+model: opus, sonnet
 ---
 
 > **Related skills:** After spec complete, use `/skill:sdlc-plan` to break down into tasks.
+>
+> **Recommended model:** Opus (complex reasoning, architecture). Sonnet OK for simple specs.
 
 # SDLC Spec
 

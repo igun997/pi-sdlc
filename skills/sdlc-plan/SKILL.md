@@ -1,9 +1,12 @@
 ---
 name: sdlc-plan
 description: Break specs into ordered tasks with acceptance criteria. Use after sdlc-spec to create executable task breakdown.
+model: opus, sonnet
 ---
 
 > **Related skills:** Create spec first with `/skill:sdlc-spec`. Execute with `/skill:sdlc-execute`.
+>
+> **Recommended model:** Opus (architecture, dependencies). Sonnet OK for straightforward specs.
 >
 > **Rules:** See `docs/rules/README.md`. Assign task types so executor loads correct rules.
 

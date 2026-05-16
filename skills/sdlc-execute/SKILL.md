@@ -1,9 +1,12 @@
 ---
 name: sdlc-execute
 description: Execute tasks with pre/post drift checks and verification gates. Use after sdlc-plan to implement with accuracy guarantees.
+model: sonnet, haiku
 ---
 
 > **Related skills:** Create plan first with `/skill:sdlc-plan`. Final verification with `/skill:sdlc-verify`.
+>
+> **Recommended model:** Sonnet (best balance for coding). Haiku for simple tasks. Opus for 8+ file refactors.
 >
 > **Rules:** See `docs/rules/README.md` for rule index. Load only relevant rules per task type.
 

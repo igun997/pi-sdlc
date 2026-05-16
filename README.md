@@ -132,6 +132,23 @@ Modular rules loaded based on task type. See [docs/rules/README.md](docs/rules/R
 
 **AI loads only relevant rules per task, minimizing token usage.**
 
+## Model Selection
+
+Each skill has recommended models. See [docs/rules/models.md](docs/rules/models.md) for details.
+
+| Phase | Best Model | Fallback | Reason |
+|-------|------------|----------|--------|
+| Spec/Planning | Opus | Sonnet | Complex reasoning, architecture |
+| Execution | Sonnet | Haiku | Balance speed + quality |
+| Review/Verify | Opus | Sonnet | Catches subtle issues |
+
+```bash
+# Use with specific model
+pi --model opus "/skill:sdlc-spec"  # Planning
+pi --model sonnet "/skill:sdlc-execute"  # Coding
+pi --model opus "/skill:sdlc-verify"  # Review
+```
+
 ## Design
 
 See [docs/plans/2026-05-16-pi-sdlc-design.md](docs/plans/2026-05-16-pi-sdlc-design.md) for full design document.

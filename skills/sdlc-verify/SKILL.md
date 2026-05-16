@@ -1,9 +1,12 @@
 ---
 name: sdlc-verify
 description: Final verification against spec with full evidence chain. Use after sdlc-execute to confirm feature is complete.
+model: opus, sonnet
 ---
 
 > **Related skills:** Execute tasks first with `/skill:sdlc-execute`. Start new feature with `/skill:sdlc-spec`.
+>
+> **Recommended model:** Opus (thorough review, catches subtle issues). Haiku for quick pass/fail checks.
 
 # SDLC Verify
 
