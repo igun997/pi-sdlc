@@ -89,9 +89,24 @@ If **APPROVED**, skip to verify handoff.
 
 ## Step 1: Load Context
 
-1. Read `docs/specs/{feature}/config.json`
-2. Get tasks: `plan_tracker_ide(action: "status")`
-3. Identify pending tasks
+1. Read `docs/specs/{feature}/config.json` for feature settings
+2. Read `sdlc.config.json` (project root) for model tiers:
+   ```json
+   {
+     "sdlc": {
+       "modelTiers": {
+         "coding": { "model": "<CODING_MODEL>" },
+         "fast": { "model": "<FAST_MODEL>" }
+       }
+     }
+   }
+   ```
+3. Get tasks: `plan_tracker_ide(action: "status")`
+4. Identify pending tasks
+
+**Extract models for subagent calls:**
+- `worker` uses: `sdlc.modelTiers.coding.model`
+- `reviewer` uses: `sdlc.modelTiers.fast.model`
 
 ## Step 2: Execute All Tasks (Auto-Loop)
 
@@ -115,13 +130,31 @@ Use `subagent` tool with chain:
   "chain": [
     {
       "agent": "worker",
-      "model": "{coding tier model}",
+      "model": "<CODING_MODEL from sdlc.config.json>",
       "task": "Implement Task {N}: {task name}\n\nAcceptance Criteria:\n{criteria}\n\nFiles: {files}\n\nRULES (read before coding):\n- Backend: Read docs/rules/backend/tdd.md - TDD MANDATORY (red→green→refactor)\n- Frontend: Read docs/rules/frontend/anti-slop.md - check _references/ first\n- All: Read docs/rules/general/git.md - security review before commit"
     },
     {
       "agent": "reviewer",
-      "model": "{fast tier model}",
+      "model": "<FAST_MODEL from sdlc.config.json>",
       "task": "Verify Task {N}: {task name}\n\nCriteria:\n{criteria}\n\nRun: {testCommand}\nBuild: {buildCommand}\n\nReturn PASS or FAIL with evidence."
+    }
+  ]
+}
+```
+
+**Example with real models:**
+```json
+{
+  "chain": [
+    {
+      "agent": "worker",
+      "model": "local-llm/openrouter/google/gemma-4-26b-a4b-it:free",
+      "task": "Implement Task 1: Create Hello Module..."
+    },
+    {
+      "agent": "reviewer", 
+      "model": "local-llm/alibaba/qwen2.5-32b-instruct",
+      "task": "Verify Task 1: Create Hello Module..."
     }
   ]
 }
