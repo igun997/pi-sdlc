@@ -165,11 +165,17 @@ async function switchModelByTier(
   // Fallback: search available models
   if (!model) {
     const availableModels = await registry.getAvailable?.() || registry.getAllModels?.() || [];
-    model = availableModels.find((m: any) => 
-      m.id === modelId || 
-      m.id === id ||
-      `${m.provider}/${m.id}` === modelId
-    );
+    model = availableModels.find((m: any) => {
+      const fullId = `${m.provider}/${m.id}`;
+      return (
+        m.id === modelId ||
+        m.id === id ||
+        fullId === modelId ||
+        // Partial match: model id contains our id or vice versa
+        m.id?.includes(id) ||
+        id?.includes(m.id)
+      );
+    });
   }
 
   if (!model) {
