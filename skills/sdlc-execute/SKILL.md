@@ -17,6 +17,20 @@ Execute tasks automatically via subagents. Worker implements, reviewer verifies.
 
 **Dependencies:** Requires pi-memctx, pi-subagents.
 
+## MANDATORY: Use Subagent Tool
+
+**YOU MUST USE the `subagent` tool for task execution.**
+
+❌ DO NOT implement tasks directly yourself
+❌ DO NOT write code in main session
+✅ ALWAYS delegate to `worker` subagent via `subagent` tool
+✅ ALWAYS verify via `reviewer` subagent
+
+This ensures:
+- Proper model assignment per task
+- Isolation between tasks
+- Consistent verification flow
+
 ## Auto-Flow
 
 ```
@@ -67,6 +81,8 @@ If **APPROVED**, skip to verify handoff.
 3. Identify pending tasks
 
 ## Step 2: Execute All Tasks (Auto-Loop)
+
+**IMPORTANT: Call `subagent` tool for EACH task. Do NOT implement yourself.**
 
 For each pending task, run worker → reviewer chain automatically:
 
