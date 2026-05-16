@@ -185,6 +185,7 @@ async function switchModelByTier(
       if (tier.thinking && tier.thinking !== "off") {
         (pi as any).setThinkingLevel?.(tier.thinking);
       }
+      ctx.ui?.notify?.(`✅ ${tierName}: ${model.provider}/${model.id}`, "info");
       return true;
     }
     ctx.ui?.notify?.(`No API key for: ${modelId}`, "error");
