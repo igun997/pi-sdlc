@@ -145,31 +145,36 @@ async function switchModelByTier(
   if (!tier?.model) return false;
 
   const modelId = tier.model;
-  const [provider, id] = modelId.includes("/") 
-    ? modelId.split("/", 2) 
-    : [null, modelId];
+  
+  // Parse provider/id - handle multi-part paths like "local-llm/cx/gpt-5.5"
+  const parts = modelId.split("/");
+  const provider = parts.length > 1 ? parts[0] : null;
+  const id = parts.length > 1 ? parts.slice(1).join("/") : modelId;
 
   // Use native pi modelRegistry
   const registry = (ctx as any).modelRegistry;
   if (!registry) return false;
 
   let model = null;
+  
+  // Try exact match first
   if (provider && id) {
     model = registry.find(provider, id);
   }
   
-  // Fallback: search all models
+  // Fallback: search available models
   if (!model) {
-    const allModels = registry.getAllModels?.() || [];
-    model = allModels.find((m: any) => 
+    const availableModels = await registry.getAvailable?.() || registry.getAllModels?.() || [];
+    model = availableModels.find((m: any) => 
       m.id === modelId || 
-      `${m.provider}/${m.id}` === modelId ||
-      m.id?.includes(id || modelId)
+      m.id === id ||
+      `${m.provider}/${m.id}` === modelId
     );
   }
 
   if (!model) {
-    ctx.ui?.notify?.(`Model not found: ${modelId}`, "error");
+    // Silent fail - continue with current model
+    ctx.ui?.notify?.(`Model "${modelId}" not available, using current`, "warning");
     return false;
   }
 
