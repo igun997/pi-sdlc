@@ -19,12 +19,25 @@ Execute tasks automatically via subagents. Worker implements, reviewer verifies.
 
 ## MANDATORY: Use Subagent Tool
 
-**YOU MUST USE the `subagent` tool for task execution.**
+**🚨 CRITICAL: YOU MUST USE the `subagent` tool for task execution.**
 
 ❌ DO NOT implement tasks directly yourself
-❌ DO NOT write code in main session
-✅ ALWAYS delegate to `worker` subagent via `subagent` tool
+❌ DO NOT write code in main session  
+❌ DO NOT call edit_ide or write_ide for task implementation
+✅ ALWAYS call `subagent` tool with chain for each task
+✅ ALWAYS delegate to `worker` subagent
 ✅ ALWAYS verify via `reviewer` subagent
+
+**First action after loading tasks: call `subagent` tool**
+
+```
+subagent({
+  "chain": [
+    {"agent": "worker", "model": "...", "task": "..."},
+    {"agent": "reviewer", "model": "...", "task": "..."}
+  ]
+})
+```
 
 This ensures:
 - Proper model assignment per task
