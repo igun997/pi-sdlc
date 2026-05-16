@@ -14,10 +14,17 @@ SDLC workflow extension for [Pi](https://pi.dev). Proven pipeline inspired by [p
 ## Installation
 
 ```bash
+# Install dependencies first
+pi install pi-memctx
+pi install npm:pi-subagents
+
+# Then install pi-sdlc
 pi install git:github.com/igun997/pi-sdlc
 ```
 
-Requires [pi-memctx](https://github.com/example/pi-memctx) for durable memory.
+**Required packages:**
+- [pi-memctx](https://github.com/example/pi-memctx) - durable memory
+- [pi-subagents](https://github.com/nicobailon/pi-subagents) - task delegation
 
 ## Commands
 

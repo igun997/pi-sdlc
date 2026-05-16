@@ -18,7 +18,7 @@
     "agents": [
       "agents/subagents"
     ],
-    "dependencies": ["pi-memctx", "npm:pi-subagents"]
+    "requiredPackages": ["pi-memctx", "npm:pi-subagents"]
   },
   "dependencies": {
     "gray-matter": "^4.0.3"
