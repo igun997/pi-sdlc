@@ -579,4 +579,40 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
       ctx.ui?.setStatus?.("sdlc", `SDLC: ${reasoning.split("/").pop()}`);
     }
   });
+
+  // ============================================================
+  // Inject Rules Path into System Prompt
+  // ============================================================
+
+  pi.on("before_agent_start", async (_event, ctx) => {
+    const rulesPath = join(pkgRoot, "docs", "rules");
+    
+    // Only inject if rules exist
+    if (!existsSync(rulesPath)) return;
+
+    const rulesNote = `
+## SDLC Rules Location
+
+When skills reference \`docs/rules/\`, use this absolute path:
+\`${rulesPath}\`
+
+Example: \`docs/rules/frontend/anti-slop.md\` → \`${rulesPath}/frontend/anti-slop.md\`
+
+Available rule categories:
+- frontend/ (anti-slop, components, accessibility, security, performance)
+- backend/ (tdd, api-design, error-handling, security, solid, observability)
+- general/ (clean-code, git, verification, ai-craftsmanship)
+- golang/ (patterns, performance)
+- rust/ (patterns, async, performance)
+- performance/ (architecture, low-latency, database, profiling)
+`;
+
+    return {
+      systemPromptOptions: {
+        sections: {
+          sdlcRules: rulesNote,
+        },
+      },
+    };
+  });
 }
