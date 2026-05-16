@@ -45,6 +45,7 @@ For each task, create `docs/specs/{feature}/tasks/NN-{name}.md`:
 # Task NN: {Task Name}
 
 **Scope:** S | M | L
+**Type:** backend | frontend | mixed
 **Dependencies:** [Task numbers that must complete first]
 
 ## Description
@@ -73,6 +74,23 @@ For each task, create `docs/specs/{feature}/tasks/NN-{name}.md`:
 - Test command: `npm test -- {pattern}`
 - Expected: All tests pass
 ```
+
+### Task Type Rules
+
+**Type: backend** (API, services, logic, data)
+- TDD mandatory
+- Steps must include: write test → red → implement → green
+- Test file required in Files section
+
+**Type: frontend** (UI, components, styling)
+- Anti-slop rules apply
+- Steps must include: find existing patterns → reference → implement
+- Must list 3+ existing components to reference
+
+**Type: mixed** (full-stack features)
+- Backend portions: TDD
+- Frontend portions: anti-slop
+- Split steps clearly by type
 
 ### Step 4: Sync to memctx
 

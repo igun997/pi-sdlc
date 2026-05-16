@@ -89,9 +89,102 @@ plan_tracker_ide:
 ```
 
 2. Follow task steps exactly
-3. Write tests first (if TDD specified)
-4. Implement minimal code to satisfy criteria
-5. **Do NOT claim completion yet**
+3. **Backend code: TDD required** (see TDD Rules below)
+4. **UI code: Anti-slop required** (see Anti-Slop Rules below)
+5. Implement minimal code to satisfy criteria
+6. **Do NOT claim completion yet**
+
+---
+
+## TDD Rules (Backend)
+
+**Mandatory for all backend/API/service/logic code.**
+
+```
+RED    → Write failing test first
+GREEN  → Minimal code to pass
+REFACTOR → Clean up, tests still pass
+```
+
+**The law:**
+1. Write test BEFORE implementation
+2. Run test, confirm it FAILS (red)
+3. Write minimal code to pass
+4. Run test, confirm it PASSES (green)
+5. Refactor if needed, tests still green
+6. Commit
+
+**Violations:**
+- Writing implementation before test = violation
+- Skipping red phase = violation
+- "I'll add tests later" = violation
+
+**Evidence required:**
+```
+# Show red:
+$ npm test
+FAIL: expected X but got undefined
+
+# Show green:
+$ npm test  
+PASS: 1/1 tests
+```
+
+---
+
+## Anti-Slop Rules (UI/Frontend)
+
+**Mandatory for all UI/component/styling code.**
+
+### What is AI Slop?
+
+Low-quality AI-generated UI with:
+- Generic patterns (Inter font, purple gradients, glassmorphism)
+- Cookie-cutter layouts
+- Buzzword-heavy copy
+- No project personality
+
+### The Rules
+
+**1. Reference existing codebase first**
+- Find 3+ existing components before creating new
+- Match existing patterns, tokens, conventions
+- If no existing pattern, ask user for direction
+
+**2. No generic AI aesthetics**
+
+| Slop Pattern | Instead |
+|--------------|--------|
+| Purple-blue gradients | Use project color tokens |
+| Glassmorphism cards | Match existing card style |
+| Inter/default fonts | Use project typography |
+| "Modern" buzzwords | Clear, specific copy |
+| Excessive animations | Match existing motion |
+
+**3. Component checklist**
+
+Before writing UI component:
+- [ ] Found 3+ similar components in codebase?
+- [ ] Using project design tokens?
+- [ ] Matches existing spacing/layout patterns?
+- [ ] Copy reviewed (no generic AI text)?
+- [ ] Accessibility considered?
+
+**4. When unsure, ASK**
+
+```
+"I see two patterns in codebase for cards:
+- Pattern A: src/components/Card.tsx (shadow, rounded)
+- Pattern B: src/components/Panel.tsx (border, square)
+
+Which should I follow for this feature?"
+```
+
+**Violations:**
+- Inventing new design patterns = violation
+- Ignoring existing components = violation
+- Generic placeholder copy = violation
+- "Looks modern" without codebase reference = violation
 
 ## Step 4: POST-CHECK (Drift Detection)
 

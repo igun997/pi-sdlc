@@ -34,6 +34,42 @@ Each skill hands off to the next. Follow the flow.
 - All criteria must be testable
 - Hard stop on any verification failure
 
+## Code Quality Rules
+
+### Backend: TDD Mandatory
+
+```
+RED → GREEN → REFACTOR
+```
+
+- Write test BEFORE implementation
+- Show failing test (red) before writing code
+- Show passing test (green) after implementation
+- Never skip the red phase
+- "I'll add tests later" = violation
+
+### Frontend: Anti-Slop Mandatory
+
+**AI Slop = generic AI-generated UI patterns:**
+- Purple-blue gradients
+- Glassmorphism cards
+- Inter font defaults
+- Cookie-cutter layouts
+- Buzzword copy
+
+**Rules:**
+1. Find 3+ existing components before creating new
+2. Use project design tokens, not defaults
+3. Match existing patterns exactly
+4. No invented aesthetics
+5. When unsure, ASK user
+
+**Violations:**
+- Ignoring existing codebase patterns
+- Inventing new design language
+- Generic placeholder copy
+- "Looks modern" without reference
+
 ## Testing Changes
 
 After modifying skills:
