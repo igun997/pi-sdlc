@@ -5,7 +5,7 @@ description: Execute tasks with pre/post drift checks and verification gates. Us
 
 > **Related skills:** Create plan first with `/skill:sdlc-plan`. Final verification with `/skill:sdlc-verify`.
 >
-> **Rules:** Backend tasks follow `docs/rules/BACKEND.md`. Frontend tasks follow `docs/rules/FRONTEND.md`. All code follows `docs/rules/GENERAL.md`.
+> **Rules:** See `docs/rules/README.md` for rule index. Load only relevant rules per task type.
 
 # SDLC Execute
 
@@ -17,10 +17,16 @@ Execute tasks one by one with drift prevention (pre-check), drift detection (pos
 
 **Dependency:** Requires pi-memctx for context recall.
 
-**Before starting:** Read the rules documents:
-- `docs/rules/GENERAL.md` - applies to all code
-- `docs/rules/BACKEND.md` - for backend tasks (TDD mandatory)
-- `docs/rules/FRONTEND.md` - for frontend tasks (anti-slop mandatory)
+**Before starting:** Load relevant rules based on task type:
+
+| Task Type | Load Rules |
+|-----------|------------|
+| Frontend | `frontend/anti-slop.md`, `frontend/components.md` |
+| Backend | `backend/tdd.md`, `backend/api-design.md` |
+| Go | `golang/patterns.md`, `golang/performance.md` |
+| Rust | `rust/patterns.md`, `rust/async.md` |
+| Performance | `performance/low-latency.md`, `performance/database.md` |
+| All tasks | `general/verification.md` |
 
 ## The Loop
 
@@ -143,6 +149,31 @@ PASS: 1/1 tests
 
 **Mandatory for all UI/component/styling code.**
 
+### Step 0: Check for `_references/` Folder
+
+**BEFORE any UI work, check if project has `_references/` folder:**
+
+```bash
+ls _references/ 2>/dev/null
+```
+
+**If exists, READ these files first:**
+1. `_references/README.md` - brand voice, visual foundations
+2. `_references/SKILL.md` - quick rules summary
+3. `_references/colors_and_type.css` - ALL design tokens
+
+**Use tokens from CSS vars:**
+```css
+/* From _references/colors_and_type.css */
+--bright: #FF6B1C;   /* Use: var(--bright) */
+--paper: #FBF7EE;    /* Use: var(--paper) */
+--fg-1: #0D1A14;     /* Use: var(--fg-1) */
+```
+
+**Copy component patterns from `_references/ui_kits/`**
+
+**Use logo/assets from `_references/assets/`**
+
 ### What is AI Slop?
 
 Low-quality AI-generated UI with:
@@ -150,13 +181,16 @@ Low-quality AI-generated UI with:
 - Cookie-cutter layouts
 - Buzzword-heavy copy
 - No project personality
+- **Ignoring `_references/` when it exists**
 
 ### The Rules
 
-**1. Reference existing codebase first**
-- Find 3+ existing components before creating new
-- Match existing patterns, tokens, conventions
-- If no existing pattern, ask user for direction
+**1. Reference existing sources first**
+
+Priority order:
+1. `_references/` folder (if exists) - highest priority
+2. Existing components in codebase - 3+ examples
+3. Ask user for direction - if nothing exists
 
 **2. No generic AI aesthetics**
 

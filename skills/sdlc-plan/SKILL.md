@@ -5,7 +5,7 @@ description: Break specs into ordered tasks with acceptance criteria. Use after 
 
 > **Related skills:** Create spec first with `/skill:sdlc-spec`. Execute with `/skill:sdlc-execute`.
 >
-> **Rules:** Read `docs/rules/BACKEND.md` and `docs/rules/FRONTEND.md` to understand task type requirements.
+> **Rules:** See `docs/rules/README.md`. Assign task types so executor loads correct rules.
 
 # SDLC Plan
 

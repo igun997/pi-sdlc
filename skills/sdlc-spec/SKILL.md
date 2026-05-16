@@ -20,9 +20,14 @@ Turn raw ideas into fully formed specs with acceptance criteria. Brainstorm one 
 ### Step 1: Understand the Idea
 
 1. Check current project state (files, docs, recent commits)
-2. Ask questions **one at a time** to refine the idea
-3. Prefer multiple choice when possible
-4. Focus on: purpose, constraints, success criteria, out of scope
+2. **Check for `_references/` folder** - if exists, read README.md for brand context
+3. Ask questions **one at a time** to refine the idea
+4. Prefer multiple choice when possible
+5. Focus on: purpose, constraints, success criteria, out of scope
+
+**For features with UI, ask:**
+- Does `_references/` folder exist? If yes, we use those design tokens.
+- If no, which existing components should we match?
 
 ### Step 2: Explore Approaches
 

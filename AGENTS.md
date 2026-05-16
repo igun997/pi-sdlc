@@ -9,13 +9,24 @@ pi-sdlc is a pi extension providing SDLC skills: spec → plan → execute → v
 ## Key Files
 
 - `skills/*/SKILL.md` - skill definitions (read these for behavior)
-- `docs/rules/` - development rules (MUST READ)
-  - `GENERAL.md` - universal rules for all code
-  - `BACKEND.md` - TDD, SOLID, API design, security
-  - `FRONTEND.md` - anti-slop, components, a11y, security
+- `docs/rules/README.md` - rule index (load only what you need)
 - `templates/` - spec, task, config templates
 - `package.json` - pi extension manifest
 - `docs/plans/` - design documents
+
+## Rules Structure
+
+```
+docs/rules/
+├── general/      # clean-code, git, verification, ai-craftsmanship
+├── frontend/     # anti-slop, components, accessibility, security, performance
+├── backend/      # tdd, solid, api-design, security, error-handling, observability
+├── golang/       # patterns, performance
+├── rust/         # patterns, async, performance
+└── performance/  # architecture, low-latency, database, profiling
+```
+
+**Load rules based on task type, not all at once.**
 
 ## Skill Flow
 

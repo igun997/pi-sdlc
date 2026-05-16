@@ -119,24 +119,18 @@ project/
 
 ## Rules
 
-Comprehensive development rules enforced during execution:
+Modular rules loaded based on task type. See [docs/rules/README.md](docs/rules/README.md).
 
-- **[General Rules](docs/rules/GENERAL.md)** - applies to all code
-  - Clean code principles (DRY, YAGNI, KISS)
-  - Git practices, documentation standards
-  - Verification protocol (evidence before claims)
-  
-- **[Backend Rules](docs/rules/BACKEND.md)** - TDD mandatory
-  - Red → Green → Refactor cycle required
-  - SOLID principles, repository pattern
-  - API design, error handling, observability
-  - OWASP security practices
-  
-- **[Frontend Rules](docs/rules/FRONTEND.md)** - anti-slop mandatory
-  - 3-reference rule (find existing patterns first)
-  - Design tokens, no generic AI aesthetics
-  - Accessibility (a11y) checklist
-  - XSS prevention, secure data handling
+| Category | Rules |
+|----------|-------|
+| **General** | clean-code, git, verification, ai-craftsmanship |
+| **Frontend** | anti-slop, components, accessibility, security, performance |
+| **Backend** | tdd, solid, api-design, security, error-handling, observability |
+| **Go** | patterns, performance |
+| **Rust** | patterns, async, performance |
+| **Performance** | architecture, low-latency, database, profiling |
+
+**AI loads only relevant rules per task, minimizing token usage.**
 
 ## Design
 
