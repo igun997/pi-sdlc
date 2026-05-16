@@ -4,7 +4,7 @@ description: Final verification against spec with evidence chain
 kind: entrypoint
 execution: interactive
 command: sdlc-verify
-model: reasoning
+model: fast
 skills: verification-before-completion
 ---
 

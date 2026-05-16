@@ -3,7 +3,7 @@ name: sdlc-verify
 description: Final verification against spec with full evidence chain. Use after sdlc-execute to confirm feature is complete.
 ---
 
-> **Model auto-switch:** Extension switches to verify-tier model automatically.
+> **Model auto-switch:** Extension switches to `fast` tier automatically (verify just checks, no heavy reasoning needed).
 >
 > **Principle:** Evidence before claims, always.
 >
