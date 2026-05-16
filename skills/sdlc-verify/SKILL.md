@@ -19,6 +19,16 @@ Final verification: full test suite, every acceptance criterion, build check, ev
 
 ## Process
 
+### Step 0: Check Approval
+
+```
+plan_tracker_ide:
+  action: check_approval
+  phase: verify
+```
+
+If **APPROVED**, feature already verified. Show report location, skip re-verification.
+
 ### Step 1: Load Context
 
 1. Read `docs/specs/{feature}/spec.md`
@@ -110,7 +120,16 @@ memctx_save:
 git commit -m "docs({feature}): verification complete"
 ```
 
-4. Clear tracker (optional):
+4. Approve phase:
+
+```
+plan_tracker_ide:
+  action: approve
+  phase: verify
+  summary: "All {N} criteria passed, tests green, build clean"
+```
+
+5. Clear tracker:
 
 ```
 plan_tracker_ide:

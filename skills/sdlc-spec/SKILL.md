@@ -19,6 +19,18 @@ Turn raw ideas into specs with testable acceptance criteria. One question at a t
 
 ## Process
 
+### Step 0: Check Approval
+
+First, check if spec phase already approved:
+
+```
+plan_tracker_ide:
+  action: check_approval
+  phase: spec
+```
+
+If **APPROVED**, skip questioning and proceed directly to Step 5 (Save) or handoff. Do not re-ask questions for approved phases.
+
 ### Step 1: Understand
 
 1. Check project state (files, docs, commits)
@@ -68,7 +80,16 @@ memctx_save:
   tags: [sdlc, spec, {feature}]
 ```
 
-4. Commit:
+4. **Approve phase** (prevents re-asking):
+
+```
+plan_tracker_ide:
+  action: approve
+  phase: spec
+  summary: "{feature} spec complete with N criteria"
+```
+
+5. Commit:
 
 ```bash
 git add docs/specs/YYYY-MM-DD-{feature}/

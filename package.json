@@ -5,7 +5,8 @@
   "pi": {
     "type": "extension",
     "extensions": [
-      "extensions/sdlc.ts"
+      "extensions/sdlc.ts",
+      "extensions/plan-tracker.ts"
     ],
     "skills": [
       "skills/sdlc-spec/SKILL.md",

@@ -19,6 +19,16 @@ Transform spec into ordered tasks with testable criteria, dependencies, and scop
 
 ## Process
 
+### Step 0: Check Approval
+
+```
+plan_tracker_ide:
+  action: check_approval
+  phase: plan
+```
+
+If **APPROVED**, skip to tracker status and handoff. Do not re-ask for plan confirmation.
+
 ### Step 1: Load Spec
 
 ```
@@ -83,10 +93,27 @@ memctx_save:
 ```
 plan_tracker_ide:
   action: init
-  tasks: ["Task 01: {name}", "Task 02: {name}"]
+  feature: "{feature}"
+  specPath: "docs/specs/{feature}/spec.md"
+  tasks:
+    - name: "Task 01: {name}"
+      type: backend
+      criteria: ["criterion 1", "criterion 2"]
+    - name: "Task 02: {name}"
+      type: frontend
+      criteria: ["criterion 1"]
 ```
 
-### Step 5: Commit
+### Step 5: Approve Phase
+
+```
+plan_tracker_ide:
+  action: approve
+  phase: plan
+  summary: "{N} tasks created for {feature}"
+```
+
+### Step 6: Commit
 
 ```bash
 git add docs/specs/{feature}/tasks/

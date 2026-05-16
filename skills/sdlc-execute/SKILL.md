@@ -43,6 +43,16 @@ COMPLETE   → Update tracker, advance
 | Rust | `docs/rules/rust/patterns.md` |
 | All | `docs/rules/general/verification.md` |
 
+## Step 0: Check Approval
+
+```
+plan_tracker_ide:
+  action: check_approval
+  phase: execute
+```
+
+If **APPROVED**, skip to verify handoff. All tasks already complete.
+
 ## Step 1: Load Context
 
 1. Read `docs/specs/{feature}/config.json`
@@ -155,6 +165,17 @@ git commit -m "feat({feature}): complete task {N} - {name}"
 
 **autoAdvance: true** → Proceed to next task.
 **autoAdvance: false** → "Say 'next' to continue."
+
+## Step 7: Approve Phase (when all complete)
+
+After final task:
+
+```
+plan_tracker_ide:
+  action: approve
+  phase: execute
+  summary: "{N} tasks implemented and verified"
+```
 
 ## Hard Stop Protocol
 
