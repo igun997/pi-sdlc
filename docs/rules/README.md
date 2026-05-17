@@ -8,12 +8,13 @@
 rules/
 ├── general/                  # Universal rules
 │   ├── clean-code.md         # DRY, YAGNI, naming
-│   ├── git.md                # Commits, branches
-│   ├── verification.md       # Evidence before claims
+│   ├── git.md                # Commits, branches, security review
+│   ├── verification.md       # Status labels, evidence, closeout
+│   ├── solver-loop.md        # Systematic approach to tasks
 │   └── ai-craftsmanship.md   # AI-assisted dev values
 │
 ├── frontend/                 # Frontend rules
-│   ├── anti-slop.md          # Prevent generic AI patterns
+│   ├── anti-slop.md          # Category-aware design, prevent AI slop
 │   ├── components.md         # Component architecture
 │   ├── accessibility.md      # A11y requirements
 │   ├── security.md           # XSS, data handling

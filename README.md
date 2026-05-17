@@ -46,7 +46,7 @@ Agents use abstract tiers mapped to concrete models:
 | `coding` | Execute | anthropic/claude-sonnet-4-6 |
 | `fast` | Verify | openai/gpt-4o-mini |
 
-Configure in `sdlc.config.json`:
+Configure in `.sdlc/config.json` (auto-gitignored):
 
 ```json
 {
@@ -123,7 +123,7 @@ Rules live in `docs/rules/`. AI reads only relevant rules, minimizing token usag
 
 ### Project Config
 
-`sdlc.config.json` in project root:
+`.sdlc/config.json` in project root (gitignored):
 
 ```json
 {

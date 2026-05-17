@@ -1,7 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { DynamicBorder } from "@earendil-works/pi-coding-agent";
 import { Container, type SelectItem, SelectList, Text } from "@earendil-works/pi-tui";
-import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
@@ -72,7 +72,7 @@ function loadDefaultConfig(): SDLCConfig {
 }
 
 function loadUserConfig(cwd: string): Partial<SDLCConfig> {
-  const projectConfig = join(cwd, "sdlc.config.json");
+  const projectConfig = join(cwd, ".sdlc/config.json");
   if (existsSync(projectConfig)) {
     try {
       return JSON.parse(readFileSync(projectConfig, "utf-8"));
@@ -96,7 +96,20 @@ function mergeConfig(base: SDLCConfig, override: Partial<SDLCConfig>): SDLCConfi
 }
 
 function saveUserConfig(cwd: string, config: Partial<SDLCConfig>): void {
-  const configPath = join(cwd, "sdlc.config.json");
+  const sdlcDir = join(cwd, ".sdlc");
+  const configPath = join(sdlcDir, "config.json");
+  const gitignorePath = join(sdlcDir, ".gitignore");
+  
+  // Create .sdlc folder if not exists
+  if (!existsSync(sdlcDir)) {
+    mkdirSync(sdlcDir, { recursive: true });
+  }
+  
+  // Create .gitignore in .sdlc if not exists
+  if (!existsSync(gitignorePath)) {
+    writeFileSync(gitignorePath, "# SDLC local config\nconfig.json\nstate.json\n");
+  }
+  
   writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
@@ -449,7 +462,7 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
   // ============================================================
 
   pi.registerCommand("sdlc-config", {
-    description: "Configure SDLC model tiers (saved to sdlc.config.json)",
+    description: "Configure SDLC model tiers (saved to .sdlc/config.json)",
     handler: async (_args, ctx) => {
       reloadConfig(ctx.cwd);
 
@@ -483,7 +496,7 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
       saveUserConfig(ctx.cwd, userConfig);
       reloadConfig(ctx.cwd);
 
-      ctx.ui?.notify?.(`✅ ${tierName} → ${modelId}\nSaved to sdlc.config.json`, "success");
+      ctx.ui?.notify?.(`✅ ${tierName} → ${modelId}\nSaved to .sdlc/config.json`, "success");
     },
   });
 
@@ -501,10 +514,10 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
         .map(([name, tier]) => `  ${name}: ${tier.model}`)
         .join("\n");
 
-      const hasProjectConfig = existsSync(join(ctx.cwd, "sdlc.config.json"));
+      const hasProjectConfig = existsSync(join(ctx.cwd, ".sdlc/config.json"));
 
       ctx.ui?.notify?.(
-        `SDLC Model Tiers:\n${lines}\n\nConfig: ${hasProjectConfig ? "sdlc.config.json" : "defaults"}`,
+        `SDLC Model Tiers:\n${lines}\n\nConfig: ${hasProjectConfig ? ".sdlc/config.json" : "defaults"}`,
         "info"
       );
     },
@@ -619,7 +632,7 @@ export default function registerSDLCExtension(pi: ExtensionAPI): void {
     reloadConfig(ctx.cwd);
 
     // Show status if config exists
-    if (existsSync(join(ctx.cwd, "sdlc.config.json"))) {
+    if (existsSync(join(ctx.cwd, ".sdlc/config.json"))) {
       const reasoning = currentConfig.sdlc.modelTiers?.reasoning?.model || "default";
       ctx.ui?.setStatus?.("sdlc", `SDLC: ${reasoning.split("/").pop()}`);
     }

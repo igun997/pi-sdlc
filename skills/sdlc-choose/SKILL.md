@@ -52,7 +52,7 @@ Extension auto-switches model when SDLC skills invoked:
 
 ## Config File
 
-`sdlc.config.json` in project root:
+`.sdlc/config.json` in project root:
 
 ```json
 {
@@ -103,4 +103,4 @@ SDLC_TIER=high pi "/skill:sdlc-spec"
 
 ## Status Bar
 
-Shows `SDLC: {tier}` when `sdlc.config.json` exists.
+Shows `SDLC: {tier}` when `.sdlc/config.json` exists.

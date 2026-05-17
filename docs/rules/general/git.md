@@ -88,6 +88,10 @@ build/
 .idea/
 .vscode/
 *.swp
+
+# SDLC local config
+.sdlc/config.json
+.sdlc/state.json
 ```
 
 ## Pre-Commit Security Review

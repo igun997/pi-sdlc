@@ -1,50 +1,93 @@
-# Verification Protocol
+# Verification Rules
 
-> Evidence before claims, always.
+> Evidence-first verification with exact status labels.
 
-## The Iron Law
+## Status Labels (MANDATORY)
+
+Use explicit status language in all updates:
+
+| Status | Meaning |
+|--------|---------|
+| `changed` | You edited or produced something |
+| `verified` | You proved a claim with relevant check |
+| `unverified` | Work exists but required proof not run |
+| `blocked` | Required progress/proof failed |
+| `assumption` | Choice depends on inference, not evidence |
+
+**NEVER use** `done`, `fixed`, `working`, `resolved` without naming proof immediately after.
+
+## Claim & Evidence Rules
+
+- Match proof to strongest claim you make
+- Name exact evidence for completion claims
+- Separate observation from inference
+- If intended verification failed → say "implemented but unverified"
+
+## Minimum Proof by Change Type
+
+| Change Type | Minimum Proof |
+|-------------|---------------|
+| Localized edit | Re-read or targeted static check |
+| Backend/API change | Targeted test, command, or runtime request |
+| UI/interaction change | Browser/user-surface verification + static |
+| Integration change | Build/typecheck + focused behavior check |
+| New app/scaffold | Install succeeds, startup succeeds, build succeeds, one happy-path works |
+
+## Verification Order
 
 ```
-NO COMPLETION CLAIMS WITHOUT VERIFICATION EVIDENCE
+1. Smallest relevant static check
+2. Focused executable or user-surface proof
+3. Broader validation only when warranted
 ```
 
-## The Gate
+## Stuck Loop Policy
 
-Before claiming any status:
+After **2 failed attempts** on same hypothesis:
 
-1. **IDENTIFY** - what command proves this?
-2. **RUN** - execute the command (fresh)
-3. **READ** - full output, check exit code
-4. **VERIFY** - does output confirm claim?
-5. **THEN** - make the claim with evidence
+1. **STOP** repeating same fix
+2. Document evidence from attempts
+3. Switch strategy:
+   - Smaller patch
+   - Read wider area of codebase
+   - Ask user one concrete question
 
-## Evidence Standards
+**DO NOT** loop on identical reasoning without changing inputs.
 
-| Claim | Requires |
-|-------|----------|
-| "Tests pass" | Test output: 0 failures |
-| "Build succeeds" | Build output: exit 0 |
-| "Bug fixed" | Test that failed now passes |
-| "Lint clean" | Linter output: 0 errors |
+## Closeout Contract (PR-Style)
 
-## Red Flags - STOP
+Every completion summary must include:
 
-If about to say:
-- "Should work now"
-- "Looks correct"
-- "I'm confident"
-- "Probably fixed"
+```markdown
+## Summary
+[Outcome in one paragraph]
 
-**Instead:** Run the verification command.
+## Files Changed
+- path/to/file.ts
+- path/to/other.ts
 
-## Pattern
+## Verification Evidence
+- Command: `npm test` → exit 0, 15 passed
+- Manual: Clicked login → redirected to dashboard
+- Browser: No console errors
 
-```bash
-# ✅ Correct
-$ npm test
-PASS: 34/34 tests
-"All tests pass" ← claim after evidence
+## Status
+✓ verified | ⚠ unverified | ✗ blocked
 
-# ❌ Wrong
-"Should pass now" ← claim without evidence
+## Risks & Unverified
+- [ ] Integration tests not run
+- [ ] Edge case X not tested
+- Assumption: Y behaves like Z
 ```
+
+## When Verification Fails
+
+```
+1. State failing check and evidence
+2. Form smallest corrective hypothesis
+3. Make smallest corrective change
+4. Re-run exact check that proves fix
+5. If 2 failures → switch strategy (see Stuck Loop)
+```
+
+**NEVER claim completion while required proof is failing.**

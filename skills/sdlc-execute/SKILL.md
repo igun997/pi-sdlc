@@ -69,7 +69,7 @@ Task 6: worker(coding) → reviewer(fast) → ✓ PASS
 → Phase complete
 ```
 
-**Model assignment** (from `sdlc.config.json` or `default-config.json`):
+**Model assignment** (from `.sdlc/config.json` or `default-config.json`):
 | Subagent | Tier | Example Model |
 |----------|------|---------------|
 | worker | `coding` | claude-sonnet-4, gpt-4o, gemma-4 |
@@ -140,7 +140,7 @@ If **APPROVED**, skip to verify handoff.
 ## Step 1: Load Context
 
 1. Read `docs/specs/{feature}/config.json` for feature settings
-2. Read `sdlc.config.json` (project root) for model tiers:
+2. Read `.sdlc/config.json` (project root) for model tiers:
    ```json
    {
      "sdlc": {
@@ -180,12 +180,12 @@ Use `subagent` tool with chain:
   "chain": [
     {
       "agent": "worker",
-      "model": "<CODING_MODEL from sdlc.config.json>",
+      "model": "<CODING_MODEL from .sdlc/config.json>",
       "task": "Implement Task {N}: {task name}\n\nAcceptance Criteria:\n{criteria}\n\nFiles: {files}\n\nRULES (read before coding):\n- Backend: Read docs/rules/backend/tdd.md - TDD MANDATORY (red→green→refactor)\n- Frontend: Read docs/rules/frontend/anti-slop.md - check _references/ first\n- All: Read docs/rules/general/git.md - security review before commit"
     },
     {
       "agent": "reviewer",
-      "model": "<FAST_MODEL from sdlc.config.json>",
+      "model": "<FAST_MODEL from .sdlc/config.json>",
       "task": "Verify Task {N}: {task name}\n\nCriteria:\n{criteria}\n\nRun: {testCommand}\nBuild: {buildCommand}\n\nReturn PASS or FAIL with evidence."
     }
   ]
