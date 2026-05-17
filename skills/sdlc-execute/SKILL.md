@@ -127,7 +127,7 @@ THEN
   → If not → report to user
 ```
 
-## Step 0: Check Approval
+## Step 0: Check Phase Approval
 
 ```
 plan_tracker_ide:
@@ -135,7 +135,13 @@ plan_tracker_ide:
   phase: execute
 ```
 
-If **APPROVED**, skip to verify handoff.
+**If NOT approved:** Ask user to approve execution phase.
+
+**If APPROVED (or user just approved):**
+- Run ALL tasks (1..N) without further confirmation
+- Only stop on FAIL (test/build failure)
+- Subagent inherits approval - NO re-asking
+- Skip to verify handoff when all complete
 
 ## Step 1: Load Context
 
@@ -173,39 +179,43 @@ plan_tracker_ide:
   status: in_progress
 ```
 
-Use `subagent` tool with chain:
+Use `subagent` tool with chain.
+
+**CRITICAL: Include `bypassApproval: true` so subagent doesn't re-ask user.**
 
 ```json
 {
+  "bypassApproval": true,
   "chain": [
     {
       "agent": "worker",
       "model": "<CODING_MODEL from .sdlc/config.json>",
-      "task": "Implement Task {N}: {task name}\n\nAcceptance Criteria:\n{criteria}\n\nFiles: {files}\n\nRULES (read before coding):\n- Backend: Read docs/rules/backend/tdd.md - TDD MANDATORY (red→green→refactor)\n- Frontend: Read docs/rules/frontend/anti-slop.md - check _references/ first\n- All: Read docs/rules/general/git.md - security review before commit"
+      "task": "Implement Task {N}: {task name}\n\nAcceptance Criteria:\n{criteria}\n\nFiles: {files}\n\nRULES (read before coding):\n- Backend: Read docs/rules/backend/tdd.md - TDD MANDATORY (red→green→refactor)\n- Frontend: Read docs/rules/frontend/anti-slop.md - check _references/ first\n- All: Read docs/rules/general/git.md - security review before commit\n\nPHASE APPROVED: Execute without asking for confirmation."
     },
     {
       "agent": "reviewer",
       "model": "<FAST_MODEL from .sdlc/config.json>",
-      "task": "Verify Task {N}: {task name}\n\nCriteria:\n{criteria}\n\nRun: {testCommand}\nBuild: {buildCommand}\n\nReturn PASS or FAIL with evidence."
+      "task": "Verify Task {N}: {task name}\n\nCriteria:\n{criteria}\n\nRun: {testCommand}\nBuild: {buildCommand}\n\nReturn PASS or FAIL with evidence.\n\nPHASE APPROVED: Verify without asking for confirmation."
     }
   ]
 }
 ```
 
-**Example with real models (async for monitoring):**
+**Example with real models (async + bypass approval):**
 ```json
 {
   "async": true,
+  "bypassApproval": true,
   "chain": [
     {
       "agent": "worker",
       "model": "local-llm/openrouter/google/gemma-4-26b-a4b-it:free",
-      "task": "Implement Task 1: Create Hello Module..."
+      "task": "Implement Task 1: Create Hello Module...\n\nPHASE APPROVED: Execute without confirmation."
     },
     {
       "agent": "reviewer", 
       "model": "local-llm/alibaba/qwen2.5-32b-instruct",
-      "task": "Verify Task 1: Create Hello Module..."
+      "task": "Verify Task 1: Create Hello Module...\n\nPHASE APPROVED: Verify without confirmation."
     }
   ]
 }
