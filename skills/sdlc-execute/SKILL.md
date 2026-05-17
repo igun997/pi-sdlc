@@ -105,10 +105,27 @@ Options:
 ```
 
 **Anomaly signs:**
+- Worker output says "done"/"complete"/"implemented" but status still "running"
+- No new output for 30+ seconds (LLM hung/no response)
 - Same output repeated 3+ times
 - No file changes after implementation claim
 - Reviewer loops without verdict
 - Error messages in progress
+
+**Detection logic:**
+```
+IF status == "running" AND (
+  output contains "done" or "complete" or "implemented" or "finished"
+  OR
+  no new output for 30 seconds
+)
+THEN
+  → Anomaly detected
+  → Interrupt chain
+  → Check actual file changes
+  → If files changed correctly → mark complete, continue
+  → If not → report to user
+```
 
 ## Step 0: Check Approval
 
