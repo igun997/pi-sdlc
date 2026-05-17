@@ -77,6 +77,39 @@ Task 6: worker(coding) → reviewer(fast) → ✓ PASS
 
 **Note:** Uses pi-subagents built-in `worker` and `reviewer` agents.
 
+## Guardrail: Stuck Detection
+
+If subagent appears stuck (no progress for 60+ seconds, looping, or anomalies):
+
+**1. Check status:**
+```json
+{"action": "status", "id": "<run-id>"}
+```
+
+**2. If stuck/anomaly detected, interrupt:**
+```json
+{"action": "interrupt", "id": "<run-id>"}
+```
+
+**3. Report to user:**
+```
+⚠️ Subagent stuck on Task {N}
+Status: {status from check}
+Last progress: {last output}
+Action: Interrupted chain
+
+Options:
+1. Retry task: say "retry"
+2. Skip task: say "skip"
+3. Manual fix: implement yourself then "continue"
+```
+
+**Anomaly signs:**
+- Same output repeated 3+ times
+- No file changes after implementation claim
+- Reviewer loops without verdict
+- Error messages in progress
+
 ## Step 0: Check Approval
 
 ```
@@ -142,9 +175,10 @@ Use `subagent` tool with chain:
 }
 ```
 
-**Example with real models:**
+**Example with real models (async for monitoring):**
 ```json
 {
+  "async": true,
   "chain": [
     {
       "agent": "worker",
@@ -161,6 +195,20 @@ Use `subagent` tool with chain:
 ```
 
 Chain runs worker → reviewer automatically. No manual spawn needed.
+
+### 2b. Monitor Progress (if async)
+
+If using `async: true`, monitor the run:
+
+```json
+{"action": "status", "id": "<returned-run-id>"}
+```
+
+Check every 30-60 seconds. Look for:
+- `status: "completed"` → proceed to 2c
+- `status: "running"` → wait, check progress output
+- `status: "paused"` or errors → investigate
+- No progress change for 60s → possible stuck, use guardrail
 
 ### 2c. Handle Result
 
